@@ -23,9 +23,19 @@ st.write("BASE_DIR contents:", [p.name for p in BASE_DIR.iterdir()])
 # ---------- GEMINI CLIENT & LLM WRAPPER ----------
 
 def get_gemini_client():
+    # Try Streamlit secrets first, then env var as a fallback
     api_key = st.secrets.get("GOOGLE_API_KEY", None) or os.getenv("GOOGLE_API_KEY")
+
     if not api_key:
-        raise RuntimeError("Google API key not found. Set GOOGLE_API_KEY in Streamlit secrets.")
+        # Show a clear message in the UI instead of crashing
+        st.error(
+            "GOOGLE_API_KEY is not set.\n\n"
+            "Go to Streamlit Cloud → your app → Settings → Advanced settings → Secrets, "
+            "and add:\n\n"
+            "GOOGLE_API_KEY = \"your_real_gemini_key_here\""
+        )
+        st.stop()
+
     return genai.Client(api_key=api_key)
 
 
