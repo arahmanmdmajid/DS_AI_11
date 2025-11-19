@@ -235,6 +235,10 @@ def main():
             "- Always double-check important steps on official portals."
         )
 
+        
+        st.markdown("---")
+        st.markdown("Made for expats in KSA. 🙌")
+
         # Optional: small feedback stats
         if "feedback" in st.session_state and st.session_state.feedback:
             total = len(st.session_state.feedback)
