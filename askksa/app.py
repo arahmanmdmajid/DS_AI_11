@@ -318,23 +318,25 @@ def main():
 
     # Show past chat messages
     for turn in st.session_state.chat_history:
-        with st.chat_message("user" if turn["role"] == "user" else "assistant"):
-            if turn["role"] == "assistant" and turn.get("is_urdu", False):
-                st.markdown(
-                    f"<div class='urdu-text'>{turn['content']}</div>",
-                    unsafe_allow_html=True,
-                )
+        role = "user" if turn["role"] == "user" else "assistant"
+        with st.chat_message(role):
+            if turn.get("is_urdu", False):
+                st.markdown(f"<div class='urdu-text'>{turn['content']}</div>", unsafe_allow_html=True)
             else:
                 st.markdown(turn["content"])
 
     # Chat input
     user_input = st.chat_input("Ask your question about Iqama / visas / Absher...")
     if user_input:
-        # Add user message to history
-        st.session_state.chat_history.append({"role": "user", "content": user_input})
+        # Detect language of the user's input and store it with the message
+        user_is_urdu = is_urdu_text(user_input)
+        st.session_state.chat_history.append({"role": "user", "content": user_input, "is_urdu": user_is_urdu})
         with st.chat_message("user"):
-            st.markdown(user_input)
-
+            if user_is_urdu:
+                st.markdown(f"<div class='urdu-text'>{user_input}</div>", unsafe_allow_html=True)
+            else:
+                st.markdown(user_input)
+ 
         # Generate answer
         with st.chat_message("assistant"):
             with st.spinner("Thinking..."):
@@ -356,8 +358,8 @@ def main():
                 elif lang_mode.startswith("English"):
                     is_urdu = False
                 else:
-                    # Auto mode → fall back to detection
-                    is_urdu = is_urdu_text(answer)
+                    # Auto mode → decide based on the user's input (more reliable than LLM output)
+                    is_urdu = is_urdu_text(user_input)
 
                 # Render with correct styling
                 if is_urdu:
@@ -366,40 +368,38 @@ def main():
                     st.markdown(answer)
 
                 # ⬅️ Store the flag along with the content
-                st.session_state.chat_history.append(
-                    {"role": "assistant", "content": answer, "is_urdu": is_urdu}
+                st.session_state.chat_history.append({"role": "assistant", "content": answer, "is_urdu": is_urdu})
+
+        # ----- Feedback buttons -----
+        col1, col2, _ = st.columns([1, 1, 4])
+        feedback_key_prefix = f"fb_{len(st.session_state.feedback)}"
+
+        with col1:
+            if st.button("👍 Helpful", key=feedback_key_prefix + "_yes"):
+                st.session_state.feedback.append(
+                    {"question": user_input, "answer": answer, "label": "helpful"}
                 )
+                st.success("Thanks for your feedback!")
 
-            # ----- Feedback buttons -----
-            col1, col2, _ = st.columns([1, 1, 4])
-            feedback_key_prefix = f"fb_{len(st.session_state.feedback)}"
+        with col2:
+            if st.button("👎 Not helpful", key=feedback_key_prefix + "_no"):
+                st.session_state.feedback.append(
+                    {
+                        "question": user_input,
+                        "answer": answer,
+                        "label": "not_helpful",
+                    }
+                )
+                st.info("Thanks, we’ll use this to improve.")
 
-            with col1:
-                if st.button("👍 Helpful", key=feedback_key_prefix + "_yes"):
-                    st.session_state.feedback.append(
-                        {"question": user_input, "answer": answer, "label": "helpful"}
-                    )
-                    st.success("Thanks for your feedback!")
-
-            with col2:
-                if st.button("👎 Not helpful", key=feedback_key_prefix + "_no"):
-                    st.session_state.feedback.append(
-                        {
-                            "question": user_input,
-                            "answer": answer,
-                            "label": "not_helpful",
-                        }
-                    )
-                    st.info("Thanks, we’ll use this to improve.")
-
-            # ----- Sources expander -----
-            with st.expander("Show sources used"):
-                for r in retrieved:
-                    st.write(f"**{r['article_title']}** (score={r['score']:.3f})")
-                    if r["url"]:
-                        st.write(r["url"])
-                    st.write(r["text_preview"])
-                    st.write("---")
+        # ----- Sources expander -----
+        with st.expander("Show sources used"):
+            for r in retrieved:
+                st.write(f"**{r['article_title']}** (score={r['score']:.3f})")
+                if r["url"]:
+                    st.write(r["url"])
+                st.write(r["text_preview"])
+                st.write("---")
 
 
 if __name__ == "__main__":
