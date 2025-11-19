@@ -2,7 +2,6 @@ import json
 import os
 from typing import List, Dict
 from pathlib import Path
-
 import streamlit as st
 import numpy as np
 import faiss
@@ -16,6 +15,9 @@ BASE_DIR = Path(__file__).resolve().parent
 INDEX_PATH = BASE_DIR / "faiss_index_ip.bin"
 CHUNKS_PATH = BASE_DIR / "chunks.json"
 META_PATH = BASE_DIR / "chunks_metadata.json"
+
+st.write("BASE_DIR contents:", [p.name for p in BASE_DIR.iterdir()])
+
 
 
 # ---------- GEMINI CLIENT & LLM WRAPPER ----------
