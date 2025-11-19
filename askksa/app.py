@@ -20,6 +20,7 @@ META_PATH = BASE_DIR / "chunks_metadata.json"
 
 # ---------- GEMINI CLIENT & LLM WRAPPER ----------
 
+
 def get_gemini_client():
     # Try Streamlit secrets first, then env var as a fallback
     api_key = st.secrets.get("GOOGLE_API_KEY", None) or os.getenv("GOOGLE_API_KEY")
@@ -30,7 +31,7 @@ def get_gemini_client():
             "GOOGLE_API_KEY is not set.\n\n"
             "Go to Streamlit Cloud → your app → Settings → Advanced settings → Secrets, "
             "and add:\n\n"
-            "GOOGLE_API_KEY = \"your_real_gemini_key_here\""
+            'GOOGLE_API_KEY = "your_real_gemini_key_here"'
         )
         st.stop()
 
@@ -50,7 +51,7 @@ def llm_chat(messages: List[Dict[str, str]]) -> str:
         content = m["content"]
 
         if role == "system":
-            gemini_role = "user"   # Gemini has no 'system' role
+            gemini_role = "user"  # Gemini has no 'system' role
         elif role == "user":
             gemini_role = "user"
         elif role == "assistant":
@@ -58,24 +59,22 @@ def llm_chat(messages: List[Dict[str, str]]) -> str:
         else:
             raise ValueError(f"Unknown role: {role}")
 
-        gemini_messages.append({
-            "role": gemini_role,
-            "parts": [{"text": content}]
-        })
+        gemini_messages.append({"role": gemini_role, "parts": [{"text": content}]})
 
     response = client.models.generate_content(
-        model="gemini-2.5-flash",
-        contents=gemini_messages
+        model="gemini-2.5-flash", contents=gemini_messages
     )
     return response.text
 
 
 # ---------- LOAD MODEL, INDEX, DATA (CACHED) ----------
 
+
 def _check_files_exist(paths):
     missing = [str(p) for p in paths if not Path(p).exists()]
     if missing:
         raise FileNotFoundError("Missing files: " + ", ".join(missing))
+
 
 @st.cache_resource
 def load_resources():
@@ -100,12 +99,11 @@ def load_resources():
 
 # ---------- RETRIEVAL & RAG LOGIC ----------
 
+
 def retrieve(query: str, model, index, all_chunks, all_chunks_metadata, k: int = 5):
-    q = model.encode(
-        [query],
-        convert_to_numpy=True,
-        normalize_embeddings=True
-    ).astype("float32")
+    q = model.encode([query], convert_to_numpy=True, normalize_embeddings=True).astype(
+        "float32"
+    )
 
     scores, ids = index.search(q, k)
     ids = ids[0]
@@ -114,15 +112,19 @@ def retrieve(query: str, model, index, all_chunks, all_chunks_metadata, k: int =
     results = []
     for rank, (idx, sc) in enumerate(zip(ids, scores), start=1):
         meta = all_chunks_metadata[idx]
-        preview = all_chunks[idx][:200].replace("\n", " ") + ("..." if len(all_chunks[idx]) > 200 else "")
-        results.append({
-            "rank": rank,
-            "score": float(sc),
-            "chunk_index": int(idx),
-            "article_title": meta.get("article_title", "Unknown"),
-            "url": meta.get("url", ""),
-            "text_preview": preview,
-        })
+        preview = all_chunks[idx][:200].replace("\n", " ") + (
+            "..." if len(all_chunks[idx]) > 200 else ""
+        )
+        results.append(
+            {
+                "rank": rank,
+                "score": float(sc),
+                "chunk_index": int(idx),
+                "article_title": meta.get("article_title", "Unknown"),
+                "url": meta.get("url", ""),
+                "text_preview": preview,
+            }
+        )
     return results
 
 
@@ -145,7 +147,7 @@ def answer_question(
     index,
     all_chunks,
     all_chunks_metadata,
-    k: int = 5
+    k: int = 5,
 ):
     # 1) Retrieve
     retrieved = retrieve(query, model, index, all_chunks, all_chunks_metadata, k=k)
@@ -165,7 +167,7 @@ def answer_question(
             "- Answer in the same language the user used (English or Urdu).\n"
             "- Keep answers clear and step-by-step where possible.\n"
             "- Do not invent rules or details not present in the context.\n"
-        )
+        ),
     }
 
     messages = [system_message]
@@ -183,7 +185,7 @@ def answer_question(
             f"{context_text}\n\n"
             f"User question: {query}\n\n"
             "Answer ONLY using the above context."
-        )
+        ),
     }
     messages.append(user_message)
 
@@ -194,90 +196,77 @@ def answer_question(
 
 # ---------- STREAMLIT UI ----------
 
-def main():
-    st.set_page_config(page_title="AskKSA Chatbot", page_icon="🇸🇦")
 
-    # Simple CSS for nicer header
-    st.markdown(
-        """
-        <style>
-        .askksa-title {
-            font-size: 2rem;
-            font-weight: 700;
-            margin-bottom: 0;
-        }
-        .askksa-subtitle {
-            font-size: 0.9rem;
-            color: #666666;
-            margin-top: 0.2rem;
-        }
-        </style>
-        """,
-        unsafe_allow_html=True,
+def main():
+    st.set_page_config(
+        page_title="AskKSA Chatbot",
+        page_icon="🇸🇦",
+        layout="wide",
     )
 
     # ----- SIDEBAR -----
     with st.sidebar:
-        st.markdown("### ⚙️ Settings")
+        st.markdown("## 🇸🇦 AskKSA")
+        st.caption(
+            "Your helper for Iqama, visas, Absher, and other KSA expat services."
+        )
 
-        lang_mode = st.radio(
-            "Answer language",
-            ["Auto (match question)", "English", "Urdu"],
-            index=0,
-            help="Choose whether the bot answers in English, Urdu, or matches the question.",
+        # Language toggle
+        if "language_pref" not in st.session_state:
+            st.session_state.language_pref = "Auto"
+
+        st.session_state.language_pref = st.radio(
+            "Reply language",
+            ["Auto", "English", "Urdu"],
+            index=["Auto", "English", "Urdu"].index(st.session_state.language_pref),
+            help="Choose how the bot should answer.",
         )
 
         st.markdown("---")
-        st.markdown("### ℹ️ About AskKSA")
+        st.markdown("### Tips")
         st.markdown(
-            "- Answers are based on your curated Absher / Saudi services articles.\n"
-            "- This is **not** an official government service.\n"
-            "- Always double-check important steps on official portals."
+            """
+- Ask one clear question at a time.
+- Mention **city**, **visa type**, or **status** if relevant.
+- If something is unclear, ask a follow-up.
+"""
         )
 
-        # Optional: small feedback stats
-        if "feedback" in st.session_state and st.session_state.feedback:
-            total = len(st.session_state.feedback)
-            helpful = sum(1 for f in st.session_state.feedback if f["label"] == "helpful")
-            st.markdown("---")
-            st.markdown("### 📊 Feedback summary")
-            st.write(f"Total responses: {total}")
-            st.write(f"Marked helpful: {helpful}")
+        st.markdown("---")
+        st.markdown("Made for expats in KSA. 🙌")
 
-    # ----- HEADER -----
-    st.markdown('<div class="askksa-title">AskKSA Chatbot 🇸🇦</div>', unsafe_allow_html=True)
+    # ----- MAIN AREA HEADER -----
     st.markdown(
-        '<div class="askksa-subtitle">Ask about Iqama, visas, fines and other Saudi services (unofficial assistant).</div>',
+        "<h1 style='text-align: center;'>AskKSA Chatbot 🇸🇦</h1>",
         unsafe_allow_html=True,
     )
-    st.divider()
+    st.markdown(
+        "<p style='text-align: center;'>Ask about Iqama, visas, and Saudi government services "
+        "based on curated, trusted articles.</p>",
+        unsafe_allow_html=True,
+    )
 
-    # Load resources (index, chunks, model)
+    # Load resources once
     with st.spinner("Loading index and knowledge base..."):
         embed_model, index, all_chunks, all_chunks_metadata = load_resources()
 
-    # Session state init
     if "chat_history" not in st.session_state:
-        st.session_state.chat_history = []  # list of {"role": "user"/"assistant", "content": str}
+        # list of {"role": "user"/"assistant", "content": str}
+        st.session_state.chat_history = []
 
     if "feedback" not in st.session_state:
-        st.session_state.feedback = []  # list of {"question", "answer", "label"}
+        # store simple feedback logs
+        st.session_state.feedback = []
 
-    if "lang_mode" not in st.session_state:
-        st.session_state.lang_mode = lang_mode
-
-    # Keep latest selection
-    st.session_state.lang_mode = lang_mode
-
-    # Show past chat messages
+    # Show past messages
     for turn in st.session_state.chat_history:
         with st.chat_message("user" if turn["role"] == "user" else "assistant"):
             st.markdown(turn["content"])
 
     # Chat input
-    user_input = st.chat_input("Ask your question about Iqama / visas / Absher...")
+    user_input = st.chat_input("Ask your question about Iqama / visas / Absher.")
     if user_input:
-        # Add user message to history
+        # Add user message
         st.session_state.chat_history.append({"role": "user", "content": user_input})
         with st.chat_message("user"):
             st.markdown(user_input)
@@ -292,31 +281,43 @@ def main():
                     index,
                     all_chunks,
                     all_chunks_metadata,
+                    language_pref=st.session_state.language_pref,
                     k=5,
-                    lang_mode=st.session_state.lang_mode,   # ⬅️ pass language mode
                 )
                 st.markdown(answer)
-                st.session_state.chat_history.append({"role": "assistant", "content": answer})
+                st.session_state.chat_history.append(
+                    {"role": "assistant", "content": answer}
+                )
 
-            # ----- Feedback buttons -----
-            col1, col2, _ = st.columns([1, 1, 4])
-            feedback_key_prefix = f"fb_{len(st.session_state.feedback)}"
+            # --- Feedback buttons ---
+            st.markdown("---")
+            st.write("**Was this answer helpful?**")
 
-            with col1:
-                if st.button("👍 Helpful", key=feedback_key_prefix + "_yes"):
-                    st.session_state.feedback.append(
-                        {"question": user_input, "answer": answer, "label": "helpful"}
-                    )
-                    st.success("Thanks for your feedback!")
+            col1, col2 = st.columns(2)
+            # use length as a simple unique key base
+            fb_key_base = len(st.session_state.chat_history)
 
-            with col2:
-                if st.button("👎 Not helpful", key=feedback_key_prefix + "_no"):
-                    st.session_state.feedback.append(
-                        {"question": user_input, "answer": answer, "label": "not_helpful"}
-                    )
-                    st.info("Thanks, we’ll use this to improve.")
+            if col1.button("👍 Yes", key=f"fb_yes_{fb_key_base}"):
+                st.session_state.feedback.append(
+                    {
+                        "question": user_input,
+                        "answer": answer,
+                        "helpful": True,
+                    }
+                )
+                st.success("Thanks for your feedback!")
 
-            # ----- Sources expander -----
+            if col2.button("👎 No", key=f"fb_no_{fb_key_base}"):
+                st.session_state.feedback.append(
+                    {
+                        "question": user_input,
+                        "answer": answer,
+                        "helpful": False,
+                    }
+                )
+                st.info("Thanks! We’ll use this to improve future answers.")
+
+            # Optional: show sources
             with st.expander("Show sources used"):
                 for r in retrieved:
                     st.write(f"**{r['article_title']}** (score={r['score']:.3f})")
