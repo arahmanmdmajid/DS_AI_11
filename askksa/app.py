@@ -9,6 +9,80 @@ from sentence_transformers import SentenceTransformer
 from google import genai
 import re
 
+
+def inject_global_css():
+    st.markdown(
+        """
+        <style>
+        /* ----- Layout & background ----- */
+        body {
+            background: #0f172a;
+        }
+        .main {
+            background: radial-gradient(circle at top left, #0f172a, #020617);
+        }
+
+        /* Center chat area with max width */
+        .chat-wrapper {
+            max-width: 900px;
+            margin: 0 auto;
+            padding-bottom: 2rem;
+        }
+
+        /* Title area */
+        .askksa-title {
+            font-size: 2.1rem;
+            font-weight: 700;
+            color: #e5e7eb;
+            margin-bottom: 0.1rem;
+        }
+        .askksa-subtitle {
+            font-size: 0.95rem;
+            color: #9ca3af;
+            margin-top: 0.1rem;
+        }
+
+        /* Message bubbles */
+        .msg-bubble {
+            padding: 0.8rem 1.1rem;
+            border-radius: 18px;
+            margin-bottom: 0.4rem;
+            backdrop-filter: blur(6px);
+        }
+        .assistant-bubble {
+            background: rgba(15, 118, 110, 0.18); /* teal glass */
+            border: 1px solid rgba(45, 212, 191, 0.35);
+            color: #e5e7eb;
+        }
+        .user-bubble {
+            background: rgba(15, 23, 42, 0.85);
+            border: 1px solid rgba(148, 163, 184, 0.6);
+            color: #e5e7eb;
+        }
+
+        /* Slight separation for user vs assistant messages */
+        .user-align {
+            text-align: left;
+        }
+        .assistant-align {
+            text-align: left;
+        }
+
+        /* Urdu styling: right-aligned + Nastaliq font */
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@400;600&display=swap');
+        .urdu-text {
+            font-family: 'Noto Nastaliq Urdu', serif;
+            font-size: 1.15rem;
+            direction: rtl;
+            text-align: right;
+            line-height: 2.1rem;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
 # ---------- CONFIG ----------
 EMBED_MODEL_NAME = "BAAI/bge-m3"  # must match the model used to compute embeddings
 
@@ -217,7 +291,13 @@ def is_urdu_text(text):
 
 
 def main():
-    st.set_page_config(page_title="AskKSA Chatbot", page_icon="🇸🇦")
+    st.set_page_config(
+        page_title="AskKSA Chatbot",
+        page_icon="🇸🇦",
+        layout="wide",
+    )
+
+    inject_global_css()
 
     st.markdown(
         """
