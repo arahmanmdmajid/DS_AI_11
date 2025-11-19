@@ -16,9 +16,7 @@ INDEX_PATH = BASE_DIR / "faiss_index_ip.bin"
 CHUNKS_PATH = BASE_DIR / "chunks.json"
 META_PATH = BASE_DIR / "chunks_metadata.json"
 
-st.write("BASE_DIR contents:", [p.name for p in BASE_DIR.iterdir()])
-
-
+# st.write("BASE_DIR contents:", [p.name for p in BASE_DIR.iterdir()])
 
 # ---------- GEMINI CLIENT & LLM WRAPPER ----------
 
