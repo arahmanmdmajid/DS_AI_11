@@ -196,16 +196,80 @@ def answer_question(
 
 def main():
     st.set_page_config(page_title="AskKSA Chatbot", page_icon="🇸🇦")
-    st.title("AskKSA Chatbot 🇸🇦")
-    st.write("Ask about Iqama, visas, and Saudi government services (based on your curated articles).")
 
+    # Simple CSS for nicer header
+    st.markdown(
+        """
+        <style>
+        .askksa-title {
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 0;
+        }
+        .askksa-subtitle {
+            font-size: 0.9rem;
+            color: #666666;
+            margin-top: 0.2rem;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    # ----- SIDEBAR -----
+    with st.sidebar:
+        st.markdown("### ⚙️ Settings")
+
+        lang_mode = st.radio(
+            "Answer language",
+            ["Auto (match question)", "English", "Urdu"],
+            index=0,
+            help="Choose whether the bot answers in English, Urdu, or matches the question.",
+        )
+
+        st.markdown("---")
+        st.markdown("### ℹ️ About AskKSA")
+        st.markdown(
+            "- Answers are based on your curated Absher / Saudi services articles.\n"
+            "- This is **not** an official government service.\n"
+            "- Always double-check important steps on official portals."
+        )
+
+        # Optional: small feedback stats
+        if "feedback" in st.session_state and st.session_state.feedback:
+            total = len(st.session_state.feedback)
+            helpful = sum(1 for f in st.session_state.feedback if f["label"] == "helpful")
+            st.markdown("---")
+            st.markdown("### 📊 Feedback summary")
+            st.write(f"Total responses: {total}")
+            st.write(f"Marked helpful: {helpful}")
+
+    # ----- HEADER -----
+    st.markdown('<div class="askksa-title">AskKSA Chatbot 🇸🇦</div>', unsafe_allow_html=True)
+    st.markdown(
+        '<div class="askksa-subtitle">Ask about Iqama, visas, fines and other Saudi services (unofficial assistant).</div>',
+        unsafe_allow_html=True,
+    )
+    st.divider()
+
+    # Load resources (index, chunks, model)
     with st.spinner("Loading index and knowledge base..."):
         embed_model, index, all_chunks, all_chunks_metadata = load_resources()
 
+    # Session state init
     if "chat_history" not in st.session_state:
         st.session_state.chat_history = []  # list of {"role": "user"/"assistant", "content": str}
 
-    # Show past messages
+    if "feedback" not in st.session_state:
+        st.session_state.feedback = []  # list of {"question", "answer", "label"}
+
+    if "lang_mode" not in st.session_state:
+        st.session_state.lang_mode = lang_mode
+
+    # Keep latest selection
+    st.session_state.lang_mode = lang_mode
+
+    # Show past chat messages
     for turn in st.session_state.chat_history:
         with st.chat_message("user" if turn["role"] == "user" else "assistant"):
             st.markdown(turn["content"])
@@ -213,7 +277,7 @@ def main():
     # Chat input
     user_input = st.chat_input("Ask your question about Iqama / visas / Absher...")
     if user_input:
-        # Add user message
+        # Add user message to history
         st.session_state.chat_history.append({"role": "user", "content": user_input})
         with st.chat_message("user"):
             st.markdown(user_input)
@@ -228,12 +292,31 @@ def main():
                     index,
                     all_chunks,
                     all_chunks_metadata,
-                    k=5
+                    k=5,
+                    lang_mode=st.session_state.lang_mode,   # ⬅️ pass language mode
                 )
                 st.markdown(answer)
                 st.session_state.chat_history.append({"role": "assistant", "content": answer})
 
-            # Optional: show sources
+            # ----- Feedback buttons -----
+            col1, col2, _ = st.columns([1, 1, 4])
+            feedback_key_prefix = f"fb_{len(st.session_state.feedback)}"
+
+            with col1:
+                if st.button("👍 Helpful", key=feedback_key_prefix + "_yes"):
+                    st.session_state.feedback.append(
+                        {"question": user_input, "answer": answer, "label": "helpful"}
+                    )
+                    st.success("Thanks for your feedback!")
+
+            with col2:
+                if st.button("👎 Not helpful", key=feedback_key_prefix + "_no"):
+                    st.session_state.feedback.append(
+                        {"question": user_input, "answer": answer, "label": "not_helpful"}
+                    )
+                    st.info("Thanks, we’ll use this to improve.")
+
+            # ----- Sources expander -----
             with st.expander("Show sources used"):
                 for r in retrieved:
                     st.write(f"**{r['article_title']}** (score={r['score']:.3f})")
