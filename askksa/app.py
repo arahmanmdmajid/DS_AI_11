@@ -10,9 +10,9 @@ from google import genai
 
 # ---------- CONFIG ----------
 EMBED_MODEL_NAME = "BAAI/bge-m3"  # must match the model used to compute embeddings
-INDEX_PATH = "faiss_index_ip.bin"
-CHUNKS_PATH = "chunks.json"
-META_PATH = "chunks_metadata.json"
+INDEX_PATH = "askksa/faiss_index_ip.bin"
+CHUNKS_PATH = "askksa/chunks.json"
+META_PATH = "askksa/chunks_metadata.json"
 
 
 # ---------- GEMINI CLIENT & LLM WRAPPER ----------
