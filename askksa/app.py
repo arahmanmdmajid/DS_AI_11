@@ -338,7 +338,7 @@ def main():
                 st.markdown(user_input)
  
         # Generate answer
-        with st.chat_message("assistant", avatar= BASE_DIR / "askksa_bot.png"):
+        with st.chat_message("assistant", avatar= BASE_DIR / "askksa_bot1.png"):
             with st.spinner("Thinking..."):
                 answer, retrieved = answer_question(
                     user_input,
