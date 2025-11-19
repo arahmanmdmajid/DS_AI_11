@@ -7,6 +7,7 @@ import numpy as np
 import faiss
 from sentence_transformers import SentenceTransformer
 from google import genai
+import re
 
 # ---------- CONFIG ----------
 EMBED_MODEL_NAME = "BAAI/bge-m3"  # must match the model used to compute embeddings
@@ -158,13 +159,9 @@ def answer_question(
 
     # 3) Language instruction based on toggle
     if lang_mode.startswith("English"):
-        lang_instruction = (
-            "Always answer in **English**, even if the question is in another language.\n"
-        )
+        lang_instruction = "Always answer in **English**, even if the question is in another language.\n"
     elif lang_mode.startswith("Urdu"):
-        lang_instruction = (
-            "Always answer in **Urdu using Urdu script**, even if the question is in another language.\n"
-        )
+        lang_instruction = "Always answer in **Urdu using Urdu script**, even if the question is in another language.\n"
     else:
         lang_instruction = (
             "Answer in the same language the user used (English or Urdu).\n"
@@ -208,6 +205,9 @@ def answer_question(
     reply = llm_chat(messages)
     return reply, retrieved
 
+def is_urdu_text(text):
+    # Urdu unicode range: 0600–06FF
+    return bool(re.search(r"[\u0600-\u06FF]", text))
 
 
 # ---------- STREAMLIT UI ----------
@@ -215,6 +215,25 @@ def answer_question(
 
 def main():
     st.set_page_config(page_title="AskKSA Chatbot", page_icon="🇸🇦")
+
+    st.markdown(
+        """
+    <style>
+    /* Load Google Urdu font */
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@400;600&display=swap');
+
+    /* Urdu styling: right-aligned + Nastaliq font */
+    .urdu-text {
+        font-family: 'Noto Nastaliq Urdu', serif;
+        font-size: 1.2rem;
+        direction: rtl;
+        text-align: right;
+        line-height: 2.2rem;
+    }
+    </style>
+    """,
+        unsafe_allow_html=True,
+    )
 
     # Simple CSS for nicer header
     st.markdown(
@@ -257,14 +276,18 @@ def main():
         # Optional: small feedback stats
         if "feedback" in st.session_state and st.session_state.feedback:
             total = len(st.session_state.feedback)
-            helpful = sum(1 for f in st.session_state.feedback if f["label"] == "helpful")
+            helpful = sum(
+                1 for f in st.session_state.feedback if f["label"] == "helpful"
+            )
             st.markdown("---")
             st.markdown("### 📊 Feedback summary")
             st.write(f"Total responses: {total}")
             st.write(f"Marked helpful: {helpful}")
 
     # ----- HEADER -----
-    st.markdown('<div class="askksa-title">AskKSA Chatbot 🇸🇦</div>', unsafe_allow_html=True)
+    st.markdown(
+        '<div class="askksa-title">AskKSA Chatbot 🇸🇦</div>', unsafe_allow_html=True
+    )
     st.markdown(
         '<div class="askksa-subtitle">Ask about Iqama, visas, fines and other Saudi services (unofficial assistant).</div>',
         unsafe_allow_html=True,
@@ -277,7 +300,9 @@ def main():
 
     # Session state init
     if "chat_history" not in st.session_state:
-        st.session_state.chat_history = []  # list of {"role": "user"/"assistant", "content": str}
+        st.session_state.chat_history = (
+            []
+        )  # list of {"role": "user"/"assistant", "content": str}
 
     if "feedback" not in st.session_state:
         st.session_state.feedback = []  # list of {"question", "answer", "label"}
@@ -312,10 +337,18 @@ def main():
                     all_chunks,
                     all_chunks_metadata,
                     k=5,
-                    lang_mode=st.session_state.lang_mode,   # ⬅️ pass language mode
+                    lang_mode=st.session_state.lang_mode,  # ⬅️ pass language mode
                 )
-                st.markdown(answer)
-                st.session_state.chat_history.append({"role": "assistant", "content": answer})
+                if is_urdu_text(answer):
+                    # Right-aligned Urdu-style Nastaliq text
+                    st.markdown(f"<div class='urdu-text'>{answer}</div>", unsafe_allow_html=True)
+                else:
+                    # Normal left-aligned English
+                    st.markdown(answer)
+
+                st.session_state.chat_history.append(
+                    {"role": "assistant", "content": answer}
+                )
 
             # ----- Feedback buttons -----
             col1, col2, _ = st.columns([1, 1, 4])
@@ -331,7 +364,11 @@ def main():
             with col2:
                 if st.button("👎 Not helpful", key=feedback_key_prefix + "_no"):
                     st.session_state.feedback.append(
-                        {"question": user_input, "answer": answer, "label": "not_helpful"}
+                        {
+                            "question": user_input,
+                            "answer": answer,
+                            "label": "not_helpful",
+                        }
                     )
                     st.info("Thanks, we’ll use this to improve.")
 
