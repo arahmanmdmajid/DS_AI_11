@@ -142,12 +142,13 @@ def build_context_for_prompt(retrieval_results, all_chunks):
 
 def answer_question(
     query: str,
-    chat_history: List[Dict[str, str]],
+    chat_history,
     model,
     index,
     all_chunks,
     all_chunks_metadata,
     k: int = 5,
+    lang_mode: str = "Auto (match question)",
 ):
     # 1) Retrieve
     retrieved = retrieve(query, model, index, all_chunks, all_chunks_metadata, k=k)
@@ -155,7 +156,20 @@ def answer_question(
     # 2) Build context
     context_text = build_context_for_prompt(retrieved, all_chunks)
 
-    # 3) Build messages for LLM
+    # 3) Language instruction based on toggle
+    if lang_mode.startswith("English"):
+        lang_instruction = (
+            "Always answer in **English**, even if the question is in another language.\n"
+        )
+    elif lang_mode.startswith("Urdu"):
+        lang_instruction = (
+            "Always answer in **Urdu using Urdu script**, even if the question is in another language.\n"
+        )
+    else:
+        lang_instruction = (
+            "Answer in the same language the user used (English or Urdu).\n"
+        )
+
     system_message = {
         "role": "system",
         "content": (
@@ -164,9 +178,9 @@ def answer_question(
             "Rules:\n"
             "- Use ONLY the information from the provided context.\n"
             "- If the answer is not clearly in the context, say you are not sure.\n"
-            "- Answer in the same language the user used (English or Urdu).\n"
+            f"- {lang_instruction}"
             "- Keep answers clear and step-by-step where possible.\n"
-            "- Do not invent rules or details not present in the context.\n"
+            "- Do not invent rules or details that are not present in the context.\n"
         ),
     }
 
@@ -176,6 +190,7 @@ def answer_question(
     for turn in chat_history[-6:]:
         messages.append(turn)
 
+    # 4) User message with context
     user_message = {
         "role": "user",
         "content": (
@@ -189,9 +204,10 @@ def answer_question(
     }
     messages.append(user_message)
 
-    # 4) Call LLM
+    # 5) Call LLM
     reply = llm_chat(messages)
     return reply, retrieved
+
 
 
 # ---------- STREAMLIT UI ----------
