@@ -20,6 +20,7 @@ META_PATH = BASE_DIR / "chunks_metadata.json"
 
 # ---------- GEMINI CLIENT & LLM WRAPPER ----------
 
+
 def get_gemini_client():
     # Try Streamlit secrets first, then env var as a fallback
     api_key = st.secrets.get("GOOGLE_API_KEY", None) or os.getenv("GOOGLE_API_KEY")
@@ -30,7 +31,7 @@ def get_gemini_client():
             "GOOGLE_API_KEY is not set.\n\n"
             "Go to Streamlit Cloud → your app → Settings → Advanced settings → Secrets, "
             "and add:\n\n"
-            "GOOGLE_API_KEY = \"your_real_gemini_key_here\""
+            'GOOGLE_API_KEY = "your_real_gemini_key_here"'
         )
         st.stop()
 
@@ -50,7 +51,7 @@ def llm_chat(messages: List[Dict[str, str]]) -> str:
         content = m["content"]
 
         if role == "system":
-            gemini_role = "user"   # Gemini has no 'system' role
+            gemini_role = "user"  # Gemini has no 'system' role
         elif role == "user":
             gemini_role = "user"
         elif role == "assistant":
@@ -58,24 +59,22 @@ def llm_chat(messages: List[Dict[str, str]]) -> str:
         else:
             raise ValueError(f"Unknown role: {role}")
 
-        gemini_messages.append({
-            "role": gemini_role,
-            "parts": [{"text": content}]
-        })
+        gemini_messages.append({"role": gemini_role, "parts": [{"text": content}]})
 
     response = client.models.generate_content(
-        model="gemini-2.5-flash",
-        contents=gemini_messages
+        model="gemini-2.5-flash", contents=gemini_messages
     )
     return response.text
 
 
 # ---------- LOAD MODEL, INDEX, DATA (CACHED) ----------
 
+
 def _check_files_exist(paths):
     missing = [str(p) for p in paths if not Path(p).exists()]
     if missing:
         raise FileNotFoundError("Missing files: " + ", ".join(missing))
+
 
 @st.cache_resource
 def load_resources():
@@ -100,12 +99,11 @@ def load_resources():
 
 # ---------- RETRIEVAL & RAG LOGIC ----------
 
+
 def retrieve(query: str, model, index, all_chunks, all_chunks_metadata, k: int = 5):
-    q = model.encode(
-        [query],
-        convert_to_numpy=True,
-        normalize_embeddings=True
-    ).astype("float32")
+    q = model.encode([query], convert_to_numpy=True, normalize_embeddings=True).astype(
+        "float32"
+    )
 
     scores, ids = index.search(q, k)
     ids = ids[0]
@@ -114,15 +112,19 @@ def retrieve(query: str, model, index, all_chunks, all_chunks_metadata, k: int =
     results = []
     for rank, (idx, sc) in enumerate(zip(ids, scores), start=1):
         meta = all_chunks_metadata[idx]
-        preview = all_chunks[idx][:200].replace("\n", " ") + ("..." if len(all_chunks[idx]) > 200 else "")
-        results.append({
-            "rank": rank,
-            "score": float(sc),
-            "chunk_index": int(idx),
-            "article_title": meta.get("article_title", "Unknown"),
-            "url": meta.get("url", ""),
-            "text_preview": preview,
-        })
+        preview = all_chunks[idx][:200].replace("\n", " ") + (
+            "..." if len(all_chunks[idx]) > 200 else ""
+        )
+        results.append(
+            {
+                "rank": rank,
+                "score": float(sc),
+                "chunk_index": int(idx),
+                "article_title": meta.get("article_title", "Unknown"),
+                "url": meta.get("url", ""),
+                "text_preview": preview,
+            }
+        )
     return results
 
 
@@ -145,7 +147,7 @@ def answer_question(
     index,
     all_chunks,
     all_chunks_metadata,
-    k: int = 5
+    k: int = 5,
 ):
     # 1) Retrieve
     retrieved = retrieve(query, model, index, all_chunks, all_chunks_metadata, k=k)
@@ -165,7 +167,7 @@ def answer_question(
             "- Answer in the same language the user used (English or Urdu).\n"
             "- Keep answers clear and step-by-step where possible.\n"
             "- Do not invent rules or details not present in the context.\n"
-        )
+        ),
     }
 
     messages = [system_message]
@@ -183,7 +185,7 @@ def answer_question(
             f"{context_text}\n\n"
             f"User question: {query}\n\n"
             "Answer ONLY using the above context."
-        )
+        ),
     }
     messages.append(user_message)
 
@@ -193,6 +195,7 @@ def answer_question(
 
 
 # ---------- STREAMLIT UI ----------
+
 
 def main():
     st.set_page_config(page_title="AskKSA Chatbot", page_icon="🇸🇦")
@@ -234,10 +237,6 @@ def main():
             "- This is **not** an official government service.\n"
             "- Always double-check important steps on official portals."
         )
-
-        
-        st.markdown("---")
-        st.markdown("Made for expats in KSA. 🙌")
 
         # Optional: small feedback stats
         if "feedback" in st.session_state and st.session_state.feedback:
