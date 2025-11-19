@@ -388,7 +388,7 @@ def main():
                 )
 
             # ----- ASSISTANT ANSWER -----
-            with st.chat_message("assistant", avatar="bot.png"):
+            with st.chat_message("assistant", avatar= BASE_DIR / "askksa_bot1.png"):
                 with st.spinner("Thinking..."):
                     answer, retrieved, target_lang = answer_question(
                         user_input,
