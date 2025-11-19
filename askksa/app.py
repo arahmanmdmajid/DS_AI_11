@@ -316,8 +316,11 @@ def main():
     # Show past chat messages
     for turn in st.session_state.chat_history:
         with st.chat_message("user" if turn["role"] == "user" else "assistant"):
-            if turn["role"] == "assistant" and is_urdu_text(turn["content"]):
-                st.markdown(f"<div class='urdu-text'>{turn['content']}</div>", unsafe_allow_html=True)
+            if turn["role"] == "assistant" and turn.get("is_urdu", False):
+                st.markdown(
+                    f"<div class='urdu-text'>{turn['content']}</div>",
+                    unsafe_allow_html=True,
+                )
             else:
                 st.markdown(turn["content"])
 
@@ -340,17 +343,28 @@ def main():
                     all_chunks,
                     all_chunks_metadata,
                     k=5,
-                    lang_mode=st.session_state.lang_mode,  # ⬅️ pass language mode
+                    lang_mode=st.session_state.lang_mode,
                 )
-                if is_urdu_text(answer):
-                    # Right-aligned Urdu-style Nastaliq text
+
+                # Decide if this reply should be treated as Urdu
+                lang_mode = st.session_state.lang_mode
+                if lang_mode.startswith("Urdu"):
+                    is_urdu = True
+                elif lang_mode.startswith("English"):
+                    is_urdu = False
+                else:
+                    # Auto mode → fall back to detection
+                    is_urdu = is_urdu_text(answer)
+
+                # Render with correct styling
+                if is_urdu:
                     st.markdown(f"<div class='urdu-text'>{answer}</div>", unsafe_allow_html=True)
                 else:
-                    # Normal left-aligned English
                     st.markdown(answer)
 
+                # ⬅️ Store the flag along with the content
                 st.session_state.chat_history.append(
-                    {"role": "assistant", "content": answer}
+                    {"role": "assistant", "content": answer, "is_urdu": is_urdu}
                 )
 
             # ----- Feedback buttons -----
