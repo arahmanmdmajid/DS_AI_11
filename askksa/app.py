@@ -316,7 +316,10 @@ def main():
     # Show past chat messages
     for turn in st.session_state.chat_history:
         with st.chat_message("user" if turn["role"] == "user" else "assistant"):
-            st.markdown(turn["content"])
+            if turn["role"] == "assistant" and is_urdu_text(turn["content"]):
+                st.markdown(f"<div class='urdu-text'>{turn['content']}</div>", unsafe_allow_html=True)
+            else:
+                st.markdown(turn["content"])
 
     # Chat input
     user_input = st.chat_input("Ask your question about Iqama / visas / Absher...")
