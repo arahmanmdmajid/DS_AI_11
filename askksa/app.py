@@ -158,14 +158,17 @@ def answer_question(
     context_text = build_context_for_prompt(retrieved, all_chunks)
 
     # 3) Language instruction based on toggle
+    # If Auto: detect current query language and force the model to answer in that language
     if lang_mode.startswith("English"):
         lang_instruction = "Always answer in **English**, even if the question is in another language.\n"
     elif lang_mode.startswith("Urdu"):
         lang_instruction = "Always answer in **Urdu using Urdu script**, even if the question is in another language.\n"
     else:
-        lang_instruction = (
-            "Answer in the same language the user used (English or Urdu).\n"
-        )
+        # Auto mode → detect the language of THIS query and force that language for this reply
+        if is_urdu_text(query):
+            lang_instruction = "Always answer in **Urdu using Urdu script** (the user asked in Urdu).\n"
+        else:
+            lang_instruction = "Always answer in **English** (the user asked in English).\n"
 
     system_message = {
         "role": "system",
