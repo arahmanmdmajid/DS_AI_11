@@ -299,44 +299,6 @@ def main():
 
     inject_global_css()
 
-    st.markdown(
-        """
-    <style>
-    /* Load Google Urdu font */
-    @import url('https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@400;600&display=swap');
-
-    /* Urdu styling: right-aligned + Nastaliq font */
-    .urdu-text {
-        font-family: 'Noto Nastaliq Urdu', serif;
-        font-size: 1.2rem;
-        direction: rtl;
-        text-align: right;
-        line-height: 2.2rem;
-    }
-    </style>
-    """,
-        unsafe_allow_html=True,
-    )
-
-    # Simple CSS for nicer header
-    st.markdown(
-        """
-        <style>
-        .askksa-title {
-            font-size: 2rem;
-            font-weight: 700;
-            margin-bottom: 0;
-        }
-        .askksa-subtitle {
-            font-size: 0.9rem;
-            color: #666666;
-            margin-top: 0.2rem;
-        }
-        </style>
-        """,
-        unsafe_allow_html=True,
-    )
-
     # ----- SIDEBAR -----
     with st.sidebar:
         st.markdown("### ⚙️ Settings")
@@ -345,141 +307,147 @@ def main():
             "Answer language",
             ["Auto (match question)", "English", "Urdu"],
             index=0,
-            help="Choose whether the bot answers in English, Urdu, or matches the question.",
+            help="Choose whether the bot answers in English, Urdu, or matches each question.",
         )
 
         st.markdown("---")
         st.markdown("### ℹ️ About AskKSA")
         st.markdown(
-            "- Answers are based on your curated Absher / Saudi services articles.\n"
+            "- Answers are based on curated Absher / Saudi services content.\n"
             "- This is **not** an official government service.\n"
-            "- Always double-check important steps on official portals."
+            "- Always verify important steps on official Saudi portals."
         )
 
-        # Optional: small feedback stats
         if "feedback" in st.session_state and st.session_state.feedback:
             total = len(st.session_state.feedback)
-            helpful = sum(
-                1 for f in st.session_state.feedback if f["label"] == "helpful"
-            )
+            helpful = sum(1 for f in st.session_state.feedback if f["label"] == "helpful")
             st.markdown("---")
             st.markdown("### 📊 Feedback summary")
             st.write(f"Total responses: {total}")
             st.write(f"Marked helpful: {helpful}")
 
-    # ----- HEADER -----
-    st.markdown(
-        '<div class="askksa-title">AskKSA Chatbot 🇸🇦</div>', unsafe_allow_html=True
-    )
-    st.markdown(
-        '<div class="askksa-subtitle">Ask about Iqama, visas, fines and other Saudi services (unofficial assistant).</div>',
-        unsafe_allow_html=True,
-    )
-    st.divider()
-
-    # Load resources (index, chunks, model)
+    # ----- LOAD RESOURCES -----
     with st.spinner("Loading index and knowledge base..."):
         embed_model, index, all_chunks, all_chunks_metadata = load_resources()
 
-    # Session state init
+    # ----- SESSION STATE -----
     if "chat_history" not in st.session_state:
-        st.session_state.chat_history = (
-            []
-        )  # list of {"role": "user"/"assistant", "content": str}
+        # role: "user"/"assistant", content: str, is_urdu: bool (for assistant)
+        st.session_state.chat_history = []
 
     if "feedback" not in st.session_state:
-        st.session_state.feedback = []  # list of {"question", "answer", "label"}
+        st.session_state.feedback = []
 
-    if "lang_mode" not in st.session_state:
-        st.session_state.lang_mode = lang_mode
-
-    # Keep latest selection
     st.session_state.lang_mode = lang_mode
 
-    # Show past chat messages
-    for turn in st.session_state.chat_history:
-        role = "user" if turn["role"] == "user" else "assistant"
-        with st.chat_message(role):
-            if turn.get("is_urdu", False):
-                st.markdown(f"<div class='urdu-text'>{turn['content']}</div>", unsafe_allow_html=True)
-            else:
-                st.markdown(turn["content"])
+    # ----- MAIN CHAT WRAPPER -----
+    with st.container():
+        st.markdown("<div class='chat-wrapper'>", unsafe_allow_html=True)
 
-    # Chat input
-    user_input = st.chat_input("Ask your question about Iqama / visas / Absher...")
-    if user_input:
-        # Detect language of the user's input and store it with the message
-        user_is_urdu = is_urdu_text(user_input)
-        st.session_state.chat_history.append({"role": "user", "content": user_input, "is_urdu": user_is_urdu})
-        with st.chat_message("user"):
-            if user_is_urdu:
-                st.markdown(f"<div class='urdu-text'>{user_input}</div>", unsafe_allow_html=True)
-            else:
-                st.markdown(user_input)
- 
-        # Generate answer
-        with st.chat_message("assistant", avatar= BASE_DIR / "askksa_bot1.png"):
-            with st.spinner("Thinking..."):
-                answer, retrieved = answer_question(
-                    user_input,
-                    st.session_state.chat_history,
-                    embed_model,
-                    index,
-                    all_chunks,
-                    all_chunks_metadata,
-                    k=5,
-                    lang_mode=st.session_state.lang_mode,
+        # Header
+        st.markdown('<div class="askksa-title">AskKSA Chatbot 🇸🇦</div>', unsafe_allow_html=True)
+        st.markdown(
+            '<div class="askksa-subtitle">Smart, bilingual assistance for Iqama, visas & Saudi e-services (unofficial).</div>',
+            unsafe_allow_html=True,
+        )
+        st.markdown("---")
+
+        # Render history
+        for turn in st.session_state.chat_history:
+            if turn["role"] == "user":
+                with st.chat_message("user"):
+                    st.markdown(
+                        f"<div class='msg-bubble user-bubble user-align'>{turn['content']}</div>",
+                        unsafe_allow_html=True,
+                    )
+            else:  # assistant
+                with st.chat_message("assistant", avatar= BASE_DIR / "askksa_bot1.png"):
+                    if turn.get("is_urdu", False):
+                        st.markdown(
+                            f"<div class='msg-bubble assistant-bubble assistant-align urdu-text'>{turn['content']}</div>",
+                            unsafe_allow_html=True,
+                        )
+                    else:
+                        st.markdown(
+                            f"<div class='msg-bubble assistant-bubble assistant-align'>{turn['content']}</div>",
+                            unsafe_allow_html=True,
+                        )
+
+        # ----- USER INPUT -----
+        user_input = st.chat_input("Ask your question about Iqama / visas / Absher...")
+        if user_input:
+            # Store user message
+            st.session_state.chat_history.append(
+                {"role": "user", "content": user_input}
+            )
+
+            with st.chat_message("user"):
+                st.markdown(
+                    f"<div class='msg-bubble user-bubble user-align'>{user_input}</div>",
+                    unsafe_allow_html=True,
                 )
 
-                # Decide if this reply should be treated as Urdu
-                lang_mode = st.session_state.lang_mode
-                if lang_mode.startswith("Urdu"):
-                    is_urdu = True
-                elif lang_mode.startswith("English"):
-                    is_urdu = False
-                else:
-                    # Auto mode → decide based on the user's input (more reliable than LLM output)
-                    is_urdu = is_urdu_text(user_input)
+            # ----- ASSISTANT ANSWER -----
+            with st.chat_message("assistant", avatar="bot.png"):
+                with st.spinner("Thinking..."):
+                    answer, retrieved, target_lang = answer_question(
+                        user_input,
+                        st.session_state.chat_history,
+                        embed_model,
+                        index,
+                        all_chunks,
+                        all_chunks_metadata,
+                        k=5,
+                        lang_mode=st.session_state.lang_mode,
+                    )
 
-                # Render with correct styling
-                if is_urdu:
-                    st.markdown(f"<div class='urdu-text'>{answer}</div>", unsafe_allow_html=True)
-                else:
-                    st.markdown(answer)
+                    is_urdu = (target_lang == "urdu")
 
-                # ⬅️ Store the flag along with the content
-                st.session_state.chat_history.append({"role": "assistant", "content": answer, "is_urdu": is_urdu})
+                    if is_urdu:
+                        st.markdown(
+                            f"<div class='msg-bubble assistant-bubble assistant-align urdu-text'>{answer}</div>",
+                            unsafe_allow_html=True,
+                        )
+                    else:
+                        st.markdown(
+                            f"<div class='msg-bubble assistant-bubble assistant-align'>{answer}</div>",
+                            unsafe_allow_html=True,
+                        )
 
-        # ----- Feedback buttons -----
-        col1, col2, _ = st.columns([1, 1, 4])
-        feedback_key_prefix = f"fb_{len(st.session_state.feedback)}"
+                    # Store assistant message with language flag
+                    st.session_state.chat_history.append(
+                        {"role": "assistant", "content": answer, "is_urdu": is_urdu}
+                    )
 
-        with col1:
-            if st.button("👍 Helpful", key=feedback_key_prefix + "_yes"):
-                st.session_state.feedback.append(
-                    {"question": user_input, "answer": answer, "label": "helpful"}
-                )
-                st.success("Thanks for your feedback!")
+                # ----- FEEDBACK BUTTONS -----
+                col1, col2, _ = st.columns([1, 1, 4])
+                fb_key_prefix = f"fb_{len(st.session_state.feedback)}"
 
-        with col2:
-            if st.button("👎 Not helpful", key=feedback_key_prefix + "_no"):
-                st.session_state.feedback.append(
-                    {
-                        "question": user_input,
-                        "answer": answer,
-                        "label": "not_helpful",
-                    }
-                )
-                st.info("Thanks, we’ll use this to improve.")
+                with col1:
+                    if st.button("👍 Helpful", key=fb_key_prefix + "_yes"):
+                        st.session_state.feedback.append(
+                            {"question": user_input, "answer": answer, "label": "helpful"}
+                        )
+                        st.success("Thanks for your feedback!")
 
-        # ----- Sources expander -----
-        with st.expander("Show sources used"):
-            for r in retrieved:
-                st.write(f"**{r['article_title']}** (score={r['score']:.3f})")
-                if r["url"]:
-                    st.write(r["url"])
-                st.write(r["text_preview"])
-                st.write("---")
+                with col2:
+                    if st.button("👎 Not helpful", key=fb_key_prefix + "_no"):
+                        st.session_state.feedback.append(
+                            {"question": user_input, "answer": answer, "label": "not_helpful"}
+                        )
+                        st.info("Thanks, we’ll use this to improve.")
+
+                # ----- SOURCES -----
+                with st.expander("Show sources used"):
+                    for r in retrieved:
+                        st.write(f"**{r['article_title']}** (score={r['score']:.3f})")
+                        if r["url"]:
+                            st.write(r["url"])
+                        st.write(r["text_preview"])
+                        st.write("---")
+
+        st.markdown("</div>", unsafe_allow_html=True)  # close .chat-wrapper
+
 
 
 if __name__ == "__main__":
