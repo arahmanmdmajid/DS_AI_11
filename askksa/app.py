@@ -1,6 +1,7 @@
 import json
 import os
 from typing import List, Dict
+from pathlib import Path
 
 import streamlit as st
 import numpy as np
@@ -10,9 +11,11 @@ from google import genai
 
 # ---------- CONFIG ----------
 EMBED_MODEL_NAME = "BAAI/bge-m3"  # must match the model used to compute embeddings
-INDEX_PATH = "askksa/faiss_index_ip.bin"
-CHUNKS_PATH = "askksa/chunks.json"
-META_PATH = "askksa/chunks_metadata.json"
+
+BASE_DIR = Path(__file__).resolve().parent
+INDEX_PATH = BASE_DIR / "faiss_index_ip.bin"
+CHUNKS_PATH = BASE_DIR / "chunks.json"
+META_PATH = BASE_DIR / "chunks_metadata.json"
 
 
 # ---------- GEMINI CLIENT & LLM WRAPPER ----------
@@ -59,17 +62,25 @@ def llm_chat(messages: List[Dict[str, str]]) -> str:
 
 # ---------- LOAD MODEL, INDEX, DATA (CACHED) ----------
 
+def _check_files_exist(paths):
+    missing = [str(p) for p in paths if not Path(p).exists()]
+    if missing:
+        raise FileNotFoundError("Missing files: " + ", ".join(missing))
+
 @st.cache_resource
 def load_resources():
+    # sanity check
+    _check_files_exist([INDEX_PATH, CHUNKS_PATH, META_PATH])
+
     # Load chunks
-    with open(CHUNKS_PATH, "r", encoding="utf-8") as f:
+    with open(str(CHUNKS_PATH), "r", encoding="utf-8") as f:
         all_chunks = json.load(f)
 
-    with open(META_PATH, "r", encoding="utf-8") as f:
+    with open(str(META_PATH), "r", encoding="utf-8") as f:
         all_chunks_metadata = json.load(f)
 
     # Load FAISS index
-    index = faiss.read_index(INDEX_PATH)
+    index = faiss.read_index(str(INDEX_PATH))
 
     # Load embedding model (for query encoding only)
     embed_model = SentenceTransformer(EMBED_MODEL_NAME)
