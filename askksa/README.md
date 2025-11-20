@@ -1,21 +1,35 @@
 
 # AskKSA — Smart Bilingual Saudi Services Assistant
 
-*A modern RAG-powered chatbot for Iqama, visa, and Absher guidance.*
+A modern **Retrieval-Augmented Generation (RAG)**-powered chatbot for Iqama, visa, and Absher guidance. It utilizes a curated dataset of Absher-related articles, and **Google’s Gemini 2.5 Flash** model to provide accurate, context-based, bilingual answers (English + Urdu).
+
+✅ **Live Demo:** [Ask KSA](https://askksa.streamlit.app/)
 
 ---
 
-## 🚀 Overview
+## 📚 Table of Contents
 
-**AskKSA** is an AI-powered assistant that answers questions related to **Saudi Arabia’s Iqama system, visas, visit visas, fines, and Absher services**.
-
-It uses a **Retrieval-Augmented Generation (RAG)** pipeline, a curated dataset of Absher-related articles, and Google’s **Gemini 2.5 Flash** model to provide accurate, context-based, bilingual answers (English + Urdu).
-
-The chatbot is built with **Streamlit** and deployed on **Streamlit Cloud** with a modern UI.
+- [Overview](#overview)
+- [What Problem Does It Solve?](#what-problem-does-it-solve)
+- [How It Solves These Problems](#how-it-solves-these-problems)
+- [Features](#features)
+  - [Core Features](#core-features)
+  - [Technical Features](#technical-features)
+- [Tech Stack](#tech-stack)
+- [How It Works (Architecture)](#how-it-works-architecture)
+- [Project Structure](#project-structure)
+- [Installation & Local Setup](#installation--local-setup)
+- [Live Demo](#live-demo)
 
 ---
 
-## ❓ What Problem Does It Solve?
+## Overview
+
+**AskKSA** is an AI-powered assistant that answers questions related to **Saudi Arabia’s Iqama system, visas, visit visas, fines, and Absher services**. The chatbot is built with **Streamlit** and deployed on **Streamlit Cloud** with a modern UI.
+
+---
+
+## What Problem Does It Solve?
 
 Saudi expatriates frequently face challenges such as:
 
@@ -35,7 +49,7 @@ AskKSA solves these problems by providing:
 
 ---
 
-## 🧠 How It Solves These Problems
+## How It Solves These Problems
 
 AskKSA uses the **RAG (Retrieval Augmented Generation)** approach:
 
@@ -53,9 +67,9 @@ This ensures:
 
 ---
 
-## ✨ Features
+## Features
 
-### 🎯 Core Features
+### Core Features
 
 * Bilingual responses (English & Urdu)
 * Urdu answers use **Noto Nastaliq Urdu** + right alignment
@@ -64,7 +78,7 @@ This ensures:
 * Shows which articles were used as sources
 * Friendly bot avatar
 
-### ⚙️ Technical Features
+### Technical Features
 
 * Streamlit-based web UI
 * FAISS vector index for semantic search
@@ -75,7 +89,7 @@ This ensures:
 
 ---
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 ### **Frontend / UI**
 
@@ -100,7 +114,7 @@ This ensures:
 
 ---
 
-## 🔍 How It Works (Architecture)
+## How It Works (Architecture)
 
 ```text
            ┌──────────────────────────────┐
@@ -136,7 +150,7 @@ This ensures:
 
 ---
 
-## 📁 Project Structure
+## Project Structure
 
 ```text
 askksa/
@@ -153,7 +167,7 @@ askksa/
 
 ---
 
-## 💻 Installation & Local Setup
+## Installation & Local Setup
 
 ### 1. Clone the repo
 
@@ -193,7 +207,7 @@ streamlit run app.py
 
 ---
 
-## ☁️ Live Demo
+## Live Demo
 
 🚀 **Live Streamlit Cloud App:** `https://askksa.streamlit.app/`
 
