@@ -276,13 +276,13 @@ def main():
     # ----- SIDEBAR -----
     with st.sidebar:
 
-        st.markdown("### ℹ️ About AskKSA")
-        st.markdown(
-            "- Answers are based on your curated Absher / Saudi services articles.\n"
-            "- This is **not** an official government service.\n"
-            "- Always double-check important steps on official portals."
-        )
-
+        with st.expander("ℹ️ About AskKSA", expanded=False):
+            st.markdown(
+                "- Answers are based on your curated Absher / Saudi services articles.\n"
+                "- This is **not** an official government service.\n"
+                "- Always double-check important steps on official portals."
+            )
+ 
         # ----- SAMPLE QUESTIONS -----
         st.markdown("---")
         st.markdown("### 💡 Sample Questions")
@@ -298,28 +298,24 @@ def main():
         for i, q in enumerate(sample_questions):
             if st.button(q, key=f"sample_q_{i}"):
                 sample_clicked = q
-
+ 
         st.markdown("---")
-
-        st.markdown("### ⚙️ Settings")
-
-        lang_mode = st.radio(
-            "Answer language",
-            ["Auto (match question)", "English", "Urdu"],
-            index=0,
-            help="Choose whether the bot answers in English, Urdu, or matches the question.",
-        )
-
-        # Optional: small feedback stats
-        if st.session_state.feedback:
-            total = len(st.session_state.feedback)
-            helpful = sum(
-                1 for f in st.session_state.feedback if f["label"] == "helpful"
+        with st.expander("⚙️ Settings", expanded=False):
+            lang_mode = st.radio(
+                "Answer language",
+                ["Auto (match question)", "English", "Urdu"],
+                index=0,
+                help="Choose whether the bot answers in English, Urdu, or matches the question.",
             )
-            st.markdown("---")
-            st.markdown("### 📊 Feedback summary")
-            st.write(f"Total responses: {total}")
-            st.write(f"Marked helpful: {helpful}")
+ 
+            # Optional: small feedback stats
+            if st.session_state.feedback:
+                total = len(st.session_state.feedback)
+                helpful = sum(1 for f in st.session_state.feedback if f["label"] == "helpful")
+                st.markdown("---")
+                st.markdown("### 📊 Feedback summary")
+                st.write(f"Total responses: {total}")
+                st.write(f"Marked helpful: {helpful}")
 
     # ----- HEADER -----
     st.markdown(
