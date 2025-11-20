@@ -1,9 +1,25 @@
+<p align="center">
+  <img src="AskKSA_Logo.png" alt="AskKSA Logo" width="180" style="border-radius: 12px;"/>
+</p>
 
-# AskKSA — Smart Bilingual Saudi Services Assistant
+<h1 align="center">AskKSA — Smart Bilingual Saudi Services Assistant</h1>
 
-A modern **Retrieval-Augmented Generation (RAG)**-powered chatbot for Iqama, visa, and Absher guidance. It utilizes a curated dataset of Absher-related articles, and **Google’s Gemini 2.5 Flash** model to provide accurate, context-based, bilingual answers (English + Urdu).
+<p align="center">
+  <strong>A modern RAG-powered assistant for Iqama, visa and Absher guidance.</strong>
+  <br />
+  Bilingual • Accurate • Fast • Modern UI
+</p>
 
-✅ **Live Demo:** [Ask KSA](https://askksa.streamlit.app/)
+<p align="center">
+  <a href="https://askksa.streamlit.app/">
+    <img src="https://img.shields.io/badge/Live_Demo-Click_Here-brightgreen?style=for-the-badge" />
+  </a>
+</p>
+
+---
+
+🔰 Badges
+<p align="left"> <!-- Python --> <img src="https://img.shields.io/badge/Python-3.10+-blue?style=for-the-badge&logo=python&logoColor=white" /> <!-- Streamlit --> <img src="https://img.shields.io/badge/Built%20with-Streamlit-FF4B4B?style=for-the-badge&logo=streamlit&logoColor=white" /> <!-- Gemini --> <img src="https://img.shields.io/badge/AI-Gemini%202.5%20Flash-4285F4?style=for-the-badge&logo=google&logoColor=white" /> <!-- Vector DB --> <img src="https://img.shields.io/badge/Vector%20DB-FAISS-009688?style=for-the-badge&logo=facebook&logoColor=white" /> <!-- Sentence Transformers --> <img src="https://img.shields.io/badge/Embeddings-BGE--M3-6C63FF?style=for-the-badge" /> <!-- Platform --> <img src="https://img.shields.io/badge/Hosted%20on-Streamlit%20Cloud-0F172A?style=for-the-badge&logo=cloudflare&logoColor=white" /> <!-- License (optional) --> <img src="https://img.shields.io/badge/License-MIT-green?style=for-the-badge" /> </p>
 
 ---
 
@@ -25,7 +41,11 @@ A modern **Retrieval-Augmented Generation (RAG)**-powered chatbot for Iqama, vis
 
 ## Overview
 
-**AskKSA** is an AI-powered assistant that answers questions related to **Saudi Arabia’s Iqama system, visas, visit visas, fines, and Absher services**. The chatbot is built with **Streamlit** and deployed on **Streamlit Cloud** with a modern UI.
+**AskKSA** is an AI-powered assistant that answers questions related to **Saudi Arabia’s Iqama system, visas, visit visas, fines, and Absher services**. 
+
+A modern **Retrieval-Augmented Generation (RAG)**-powered chatbot for Iqama, visa, and Absher guidance. It utilizes a curated dataset of Absher-related articles, and **Google’s Gemini 2.5 Flash** model to provide accurate, context-based, bilingual answers (English + Urdu).
+
+The chatbot is built with **Streamlit** and deployed on **Streamlit Cloud** with a modern UI.
 
 ---
 
