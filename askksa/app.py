@@ -485,6 +485,44 @@ def main():
                 st.write(r["text_preview"])
                 st.write("---")
 
+    # =======================
+    # SESSION HISTORY (BELOW CHAT)
+    # =======================
+    st.markdown("---")
+    st.markdown("### 📝 Session History")
+
+    history = st.session_state.chat_history
+    if history:
+        pair_idx = 1
+        i = 0
+
+        while i < len(history) - 1:
+            user_turn = history[i]
+            assistant_turn = history[i + 1]
+
+            if (
+                user_turn["role"] == "user"
+                and assistant_turn["role"] == "assistant"
+            ):
+                q_text = user_turn["content"]
+                a_text = assistant_turn["content"]
+
+                # shorten previews for readability
+                q_preview = q_text if len(q_text) <= 120 else q_text[:120] + "..."
+                a_preview = a_text if len(a_text) <= 120 else a_text[:120] + "..."
+
+                st.markdown(f"**Q{pair_idx}:** {q_preview}")
+                st.caption(f"**A:** {a_preview}")
+                st.markdown("<hr>", unsafe_allow_html=True)
+
+                pair_idx += 1
+                i += 2
+            else:
+                i += 1
+    else:
+        st.caption("Ask your first question to start the history.")
+
+
 
 if __name__ == "__main__":
     main()
