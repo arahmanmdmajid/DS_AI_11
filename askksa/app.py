@@ -266,6 +266,10 @@ def main():
     if "feedback" not in st.session_state:
         st.session_state.feedback = []  # list of {"question", "answer", "label"}
 
+    # store last answer context for sources box
+    if "last_retrieved" not in st.session_state:
+        st.session_state.last_retrieved = None
+
     # this will store which sample question (if any) was clicked this run
     sample_clicked = None
 
@@ -337,7 +341,10 @@ def main():
     # Show past chat messages
     for turn in st.session_state.chat_history:
         role = "user" if turn["role"] == "user" else "assistant"
-        with st.chat_message(role, avatar=str(BASE_DIR / "askksa_bot1.png") if role == "assistant" else None):
+        with st.chat_message(
+            role,
+            avatar=str(BASE_DIR / "askksa_bot1.png") if role == "assistant" else None,
+        ):
             if turn.get("is_urdu", False):
                 st.markdown(
                     f"<div class='urdu-text'>{turn['content']}</div>",
@@ -405,6 +412,11 @@ def main():
                     {"role": "assistant", "content": answer, "is_urdu": is_urdu}
                 )
 
+                # 🟩 store retrieved in session so it persists across reruns
+                st.session_state.last_retrieved = retrieved
+                st.session_state.last_question = user_input
+                st.session_state.last_answer = answer
+
         # ----- Feedback buttons -----
         col1, col2, _ = st.columns([1, 1, 4])
         feedback_key_prefix = f"fb_{len(st.session_state.feedback)}"
@@ -427,48 +439,54 @@ def main():
                 )
                 st.info("Thanks, we’ll use this to improve.")
 
-        # ----- Sources expander -----
+    # 🔻 FROM HERE ON: ALWAYS RENDER (even when user_input is None) 🔻
+
+    # ----- Sources expander (for last answer) -----
+    if st.session_state.last_retrieved:
         with st.expander("Show sources used"):
-            for r in retrieved:
+            for r in st.session_state.last_retrieved:
                 st.write(f"**{r['article_title']}** (score={r['score']:.3f})")
                 if r["url"]:
                     st.write(r["url"])
                 st.write(r["text_preview"])
                 st.write("---")
 
-        # =======================
-        # SESSION HISTORY (BELOW CHAT)
-        # =======================
-        st.markdown("---")
-        st.markdown("### 📝 Session History")
+    # =======================
+    # SESSION HISTORY (BELOW CHAT)
+    # =======================
+    st.markdown("---")
+    st.markdown("### 📝 Session History")
 
-        history = st.session_state.chat_history
-        if history:
-            pair_idx = 1
-            i = 0
+    history = st.session_state.chat_history
+    if history:
+        pair_idx = 1
+        i = 0
 
-            while i < len(history) - 1:
-                user_turn = history[i]
-                assistant_turn = history[i + 1]
+        while i < len(history) - 1:
+            user_turn = history[i]
+            assistant_turn = history[i + 1]
 
-                if user_turn["role"] == "user" and assistant_turn["role"] == "assistant":
-                    q_text = user_turn["content"]
-                    a_text = assistant_turn["content"]
+            if (
+                user_turn["role"] == "user"
+                and assistant_turn["role"] == "assistant"
+            ):
+                q_text = user_turn["content"]
+                a_text = assistant_turn["content"]
 
-                    # shorten previews for readability
-                    q_preview = q_text if len(q_text) <= 120 else q_text[:120] + "..."
-                    a_preview = a_text if len(a_text) <= 120 else a_text[:120] + "..."
+                # shorten previews for readability
+                q_preview = q_text if len(q_text) <= 120 else q_text[:120] + "..."
+                a_preview = a_text if len(a_text) <= 120 else a_text[:120] + "..."
 
-                    st.markdown(f"**Q{pair_idx}:** {q_preview}")
-                    st.caption(f"**A:** {a_preview}")
-                    st.markdown("<hr>", unsafe_allow_html=True)
+                st.markdown(f"**Q{pair_idx}:** {q_preview}")
+                st.caption(f"**A:** {a_preview}")
+                st.markdown("<hr>", unsafe_allow_html=True)
 
-                    pair_idx += 1
-                    i += 2
-                else:
-                    i += 1
-        else:
-            st.caption("Ask your first question to start the history.")
+                pair_idx += 1
+                i += 2
+            else:
+                i += 1
+    else:
+        st.caption("Ask your first question to start the history.")
 
 
 
