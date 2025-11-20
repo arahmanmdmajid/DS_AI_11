@@ -209,5 +209,5 @@ streamlit run app.py
 
 ## Live Demo
 
-🚀 **Live Streamlit Cloud App:** `https://askksa.streamlit.app/`
+🚀 **Live Streamlit Cloud App:** [Ask KSA](https://askksa.streamlit.app/)
 
