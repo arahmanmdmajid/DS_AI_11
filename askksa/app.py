@@ -219,6 +219,7 @@ def is_urdu_text(text):
 def main():
     st.set_page_config(page_title="AskKSA Chatbot", page_icon="🇸🇦")
 
+    # Urdu font + styling
     st.markdown(
         """
     <style>
@@ -257,6 +258,17 @@ def main():
         unsafe_allow_html=True,
     )
 
+    # ---- init session state ----
+    if "chat_history" not in st.session_state:
+        # list of {"role": "user"/"assistant", "content": str, "is_urdu": bool}
+        st.session_state.chat_history = []
+
+    if "feedback" not in st.session_state:
+        st.session_state.feedback = []  # list of {"question", "answer", "label"}
+
+    # this will store which sample question (if any) was clicked this run
+    sample_clicked = None
+
     # ----- SIDEBAR -----
     with st.sidebar:
         st.markdown("### ⚙️ Settings")
@@ -277,7 +289,7 @@ def main():
         )
 
         # Optional: small feedback stats
-        if "feedback" in st.session_state and st.session_state.feedback:
+        if st.session_state.feedback:
             total = len(st.session_state.feedback)
             helpful = sum(
                 1 for f in st.session_state.feedback if f["label"] == "helpful"
@@ -286,6 +298,22 @@ def main():
             st.markdown("### 📊 Feedback summary")
             st.write(f"Total responses: {total}")
             st.write(f"Marked helpful: {helpful}")
+
+        # ----- SAMPLE QUESTIONS -----
+        st.markdown("---")
+        st.markdown("### 💡 Sample Questions")
+
+        sample_questions = [
+            "اقامہ کی تجدید کا طریقہ کار کیا ہے؟",
+            "How can I check my Iqama expiry in Absher?",
+            "How to transfer sponsorship (Naqal Kafala) online?",
+            "How to pay traffic fines through Absher?",
+            "How to check visit visa validity in Absher?",
+        ]
+
+        for i, q in enumerate(sample_questions):
+            if st.button(q, key=f"sample_q_{i}"):
+                sample_clicked = q
 
     # ----- HEADER -----
     st.markdown(
@@ -297,48 +325,48 @@ def main():
     )
     st.divider()
 
+    # update lang_mode in state
+    st.session_state.lang_mode = lang_mode
+
     # Load resources (index, chunks, model)
     with st.spinner("Loading index and knowledge base..."):
         embed_model, index, all_chunks, all_chunks_metadata = load_resources()
 
-    # Session state init
-    if "chat_history" not in st.session_state:
-        st.session_state.chat_history = (
-            []
-        )  # list of {"role": "user"/"assistant", "content": str}
-
-    if "feedback" not in st.session_state:
-        st.session_state.feedback = []  # list of {"question", "answer", "label"}
-
-    if "lang_mode" not in st.session_state:
-        st.session_state.lang_mode = lang_mode
-
-    # Keep latest selection
-    st.session_state.lang_mode = lang_mode
-
     # Show past chat messages
     for turn in st.session_state.chat_history:
         role = "user" if turn["role"] == "user" else "assistant"
-        with st.chat_message(role):
+        with st.chat_message(role, avatar="askksa_bot1.png" if role == "assistant" else None):
             if turn.get("is_urdu", False):
-                st.markdown(f"<div class='urdu-text'>{turn['content']}</div>", unsafe_allow_html=True)
+                st.markdown(
+                    f"<div class='urdu-text'>{turn['content']}</div>",
+                    unsafe_allow_html=True,
+                )
             else:
                 st.markdown(turn["content"])
 
-    # Chat input
-    user_input = st.chat_input("Ask your question about Iqama / visas / Absher...")
+    # ----- USER INPUT (typed or sample) -----
+    typed_input = st.chat_input("Ask your question about Iqama / visas / Absher...")
+    # priority: typed > sample-click
+    user_input = typed_input or sample_clicked
+
     if user_input:
         # Detect language of the user's input and store it with the message
         user_is_urdu = is_urdu_text(user_input)
-        st.session_state.chat_history.append({"role": "user", "content": user_input, "is_urdu": user_is_urdu})
+        st.session_state.chat_history.append(
+            {"role": "user", "content": user_input, "is_urdu": user_is_urdu}
+        )
+
         with st.chat_message("user"):
             if user_is_urdu:
-                st.markdown(f"<div class='urdu-text'>{user_input}</div>", unsafe_allow_html=True)
+                st.markdown(
+                    f"<div class='urdu-text'>{user_input}</div>",
+                    unsafe_allow_html=True,
+                )
             else:
                 st.markdown(user_input)
- 
+
         # Generate answer
-        with st.chat_message("assistant", avatar= BASE_DIR / "askksa_bot1.png"):
+        with st.chat_message("assistant", avatar="askksa_bot1.png"):
             with st.spinner("Thinking..."):
                 answer, retrieved = answer_question(
                     user_input,
@@ -358,17 +386,22 @@ def main():
                 elif lang_mode.startswith("English"):
                     is_urdu = False
                 else:
-                    # Auto mode → decide based on the user's input (more reliable than LLM output)
+                    # Auto mode → decide based on the user's input
                     is_urdu = is_urdu_text(user_input)
 
                 # Render with correct styling
                 if is_urdu:
-                    st.markdown(f"<div class='urdu-text'>{answer}</div>", unsafe_allow_html=True)
+                    st.markdown(
+                        f"<div class='urdu-text'>{answer}</div>",
+                        unsafe_allow_html=True,
+                    )
                 else:
                     st.markdown(answer)
 
-                # ⬅️ Store the flag along with the content
-                st.session_state.chat_history.append({"role": "assistant", "content": answer, "is_urdu": is_urdu})
+                # Store the flag along with the content
+                st.session_state.chat_history.append(
+                    {"role": "assistant", "content": answer, "is_urdu": is_urdu}
+                )
 
         # ----- Feedback buttons -----
         col1, col2, _ = st.columns([1, 1, 4])
@@ -400,6 +433,41 @@ def main():
                     st.write(r["url"])
                 st.write(r["text_preview"])
                 st.write("---")
+
+        # =======================
+        # SESSION HISTORY (BELOW CHAT)
+        # =======================
+        st.markdown("---")
+        st.markdown("### 📝 Session History")
+
+        history = st.session_state.chat_history
+        if history:
+            pair_idx = 1
+            i = 0
+
+            while i < len(history) - 1:
+                user_turn = history[i]
+                assistant_turn = history[i + 1]
+
+                if user_turn["role"] == "user" and assistant_turn["role"] == "assistant":
+                    q_text = user_turn["content"]
+                    a_text = assistant_turn["content"]
+
+                    # shorten previews for readability
+                    q_preview = q_text if len(q_text) <= 120 else q_text[:120] + "..."
+                    a_preview = a_text if len(a_text) <= 120 else a_text[:120] + "..."
+
+                    st.markdown(f"**Q{pair_idx}:** {q_preview}")
+                    st.caption(f"**A:** {a_preview}")
+                    st.markdown("<hr>", unsafe_allow_html=True)
+
+                    pair_idx += 1
+                    i += 2
+                else:
+                    i += 1
+        else:
+            st.caption("Ask your first question to start the history.")
+
 
 
 if __name__ == "__main__":
