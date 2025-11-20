@@ -337,7 +337,7 @@ def main():
     # Show past chat messages
     for turn in st.session_state.chat_history:
         role = "user" if turn["role"] == "user" else "assistant"
-        with st.chat_message(role, avatar="askksa_bot1.png" if role == "assistant" else None):
+        with st.chat_message(role, avatar=str(BASE_DIR / "askksa_bot1.png") if role == "assistant" else None):
             if turn.get("is_urdu", False):
                 st.markdown(
                     f"<div class='urdu-text'>{turn['content']}</div>",
@@ -368,7 +368,7 @@ def main():
                 st.markdown(user_input)
 
         # Generate answer
-        with st.chat_message("assistant", avatar="askksa_bot1.png"):
+        with st.chat_message("assistant", avatar=str(BASE_DIR / "askksa_bot1.png")):
             with st.spinner("Thinking..."):
                 answer, retrieved = answer_question(
                     user_input,
