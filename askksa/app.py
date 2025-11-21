@@ -224,6 +224,23 @@ def main():
         text-align: right;
         line-height: 2.2rem;
     }
+
+    /* Apply Google Urdu font to the sidebar */
+    section[data-testid="stSidebar"] {
+      font-family: 'Noto Nastaliq Urdu', serif !important;
+      direction: rtl !important;
+      text-align: right !important;
+    }
+
+    /* Ensure buttons / labels in the sidebar use the same font */
+    section[data-testid="stSidebar"] button,
+    section[data-testid="stSidebar"] button div,
+    section[data-testid="stSidebar"] button span,
+    section[data-testid="stSidebar"] .stButton > button {
+      font-family: 'Noto Nastaliq Urdu', serif !important;
+      direction: rtl !important;
+      text-align: right !important;
+    }
     </style>
     """,
         unsafe_allow_html=True,
