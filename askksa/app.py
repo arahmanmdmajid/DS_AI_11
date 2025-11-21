@@ -265,13 +265,12 @@ def main():
 
     # ----- SIDEBAR -----
     with st.sidebar:
-
-        st.markdown("### ℹ️ About AskKSA")
-        st.markdown(
-            "- Answers are based on your curated Absher / Saudi services articles.\n"
-            "- This is **not** an official government service.\n"
-            "- Always double-check important steps on official portals."
-        )
+        with st.expander("ℹ️ About AskKSA", expanded=False):
+            st.markdown(
+                "- Answers are based on your curated Absher / Saudi services articles.\n"
+                "- This is **not** an official government service.\n"
+                "- Always double-check important steps on official portals."
+            )
 
         # ----- SAMPLE QUESTIONS -----
         st.markdown("---")
@@ -366,11 +365,17 @@ def main():
                 with feedback_col[0]:
                     if st.button("👍", key=f"thumbs_up_{len(st.session_state.chat_history)}"):
                         st.session_state.feedback.append({"question": user_input, "answer": answer, "label": "helpful"})
-                        st.success("Thank you for your feedback!")
+                        st.session_state.feedback_given = True  # Track feedback given
                 with feedback_col[1]:
                     if st.button("👎", key=f"thumbs_down_{len(st.session_state.chat_history)}"):
                         st.session_state.feedback.append({"question": user_input, "answer": answer, "label": "not helpful"})
-                        st.warning("Thank you for your feedback!")
+                        st.session_state.feedback_given = True  # Track feedback given
+
+                # Show thank you message if feedback was given
+                if 'feedback_given' in st.session_state and st.session_state.feedback_given:
+                    st.success("Thank you for your feedback!")
+                    st.session_state.feedback_given = False  # Reset feedback state
+
 
     # ----- Sources expander (for last answer) -----
     if st.session_state.last_retrieved:
