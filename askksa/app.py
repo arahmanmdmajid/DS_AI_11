@@ -361,6 +361,17 @@ def main():
                 # Store retrieved in session so it persists across reruns
                 st.session_state.last_retrieved = retrieved
 
+                # Feedback buttons
+                feedback_col = st.columns(2)
+                with feedback_col[0]:
+                    if st.button("👍", key=f"thumbs_up_{len(st.session_state.chat_history)}"):
+                        st.session_state.feedback.append({"question": user_input, "answer": answer, "label": "helpful"})
+                        st.success("Thank you for your feedback!")
+                with feedback_col[1]:
+                    if st.button("👎", key=f"thumbs_down_{len(st.session_state.chat_history)}"):
+                        st.session_state.feedback.append({"question": user_input, "answer": answer, "label": "not helpful"})
+                        st.warning("Thank you for your feedback!")
+
     # ----- Sources expander (for last answer) -----
     if st.session_state.last_retrieved:
         with st.expander("Show sources used"):
