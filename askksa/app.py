@@ -289,6 +289,16 @@ def main():
                 sample_clicked = q
 
         st.markdown("---")
+    
+    # ----- HEADER -----
+    st.markdown(
+        '<div class="askksa-title">AskKSA Chatbot 🇸🇦</div>', unsafe_allow_html=True
+    )
+    st.markdown(
+        '<div class="askksa-subtitle">Ask about Iqama, visas, fines and other Saudi services (unofficial assistant).</div>',
+        unsafe_allow_html=True,
+    )
+    st.divider()
 
     # Load resources (index, chunks, model)
     with st.spinner("Loading index and knowledge base..."):
