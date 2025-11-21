@@ -212,29 +212,26 @@ def main():
     # Urdu font + styling
     st.markdown(
         """
-    <style>
-    /* Load Google Urdu font */
-    @import url('https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@400;600&display=swap');
+    <!-- Load Google Urdu font via link (more reliable than @import) -->
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@400;600&display=swap" rel="stylesheet">
 
-    /* Urdu styling: right-aligned + Nastaliq font */
+    <style>
+    /* Strongly enforce the Nastaliq font only for elements we wrap with .urdu-text.
+       Use fallbacks and !important so Streamlit's defaults don't override it. */
     .urdu-text {
-        font-family: 'Noto Nastaliq Urdu', serif;
-        font-size: 1.2rem;
-        direction: rtl;
-        text-align: right;
-        line-height: 2.2rem;
+        font-family: 'Noto Nastaliq Urdu', 'Noto Naskh Arabic', serif !important;
+        font-weight: 400 !important;
+        font-size: 1.2rem !important;
+        direction: rtl !important;
+        text-align: right !important;
+        line-height: 2.2rem !important;
+        -webkit-font-smoothing: antialiased !important;
+        -moz-osx-font-smoothing: grayscale !important;
     }
 
-    /* Apply Google Urdu font only to elements whose direction is RTL.
-       This avoids forcing the Urdu font on English text in the sidebar. */
-    section[data-testid="stSidebar"] :dir(rtl),
-    section[data-testid="stSidebar"] [dir="rtl"],
-    section[data-testid="stSidebar"] button:dir(rtl),
-    section[data-testid="stSidebar"] button[dir="rtl"],
-    section[data-testid="stSidebar"] button span:dir(rtl) {
-      font-family: 'Noto Nastaliq Urdu', serif !important;
-      direction: rtl !important;
-      text-align: right !important;
+    /* Ensure any nested inline elements inside .urdu-text also inherit the font */
+    .urdu-text, .urdu-text * {
+        font-family: inherit !important;
     }
     </style>
     """,
