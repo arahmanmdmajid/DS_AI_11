@@ -370,21 +370,27 @@ def main():
                 # Store retrieved in session so it persists across reruns
                 st.session_state.last_retrieved = retrieved
 
-                # Feedback buttons
-                feedback_col = st.columns(2)
-                with feedback_col[0]:
-                    if st.button("👍", key=f"thumbs_up_{len(st.session_state.chat_history)}"):
-                        st.session_state.feedback.append({"question": user_input, "answer": answer, "label": "helpful"})
-                        st.session_state.feedback_given = True  # Track feedback given
-                with feedback_col[1]:
-                    if st.button("👎", key=f"thumbs_down_{len(st.session_state.chat_history)}"):
-                        st.session_state.feedback.append({"question": user_input, "answer": answer, "label": "not helpful"})
-                        st.session_state.feedback_given = True  # Track feedback given
+        # ----- Feedback buttons -----
+        col1, col2, _ = st.columns([1, 1, 4])
+        feedback_key_prefix = f"fb_{len(st.session_state.feedback)}"
 
-                # Show thank you message if feedback was given
-                if 'feedback_given' in st.session_state and st.session_state.feedback_given:
-                    st.success("Thank you for your feedback!")
-                    st.session_state.feedback_given = False  # Reset feedback state
+        with col1:
+            if st.button("👍 Helpful", key=feedback_key_prefix + "_yes"):
+                st.session_state.feedback.append(
+                    {"question": user_input, "answer": answer, "label": "helpful"}
+                )
+                st.success("Thanks for your feedback!")
+
+        with col2:
+            if st.button("👎 Not helpful", key=feedback_key_prefix + "_no"):
+                st.session_state.feedback.append(
+                    {
+                        "question": user_input,
+                        "answer": answer,
+                        "label": "not_helpful",
+                    }
+                )
+                st.info("Thanks, we’ll use this to improve.")
 
 
     # ----- Sources expander (for last answer) -----
