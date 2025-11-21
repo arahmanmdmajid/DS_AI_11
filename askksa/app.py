@@ -271,6 +271,14 @@ def main():
 
     # this will store which sample question (if any) was clicked this run
     sample_clicked = None
+    # If the user clicked a sample link we rendered as ?sample_q=N, pick it up here
+    params = st.experimental_get_query_params()
+    if params.get("sample_q"):
+        try:
+            idx = int(params["sample_q"][0])
+            sample_clicked = sample_questions[idx]
+        except Exception:
+            sample_clicked = None
 
     # ----- SIDEBAR -----
     with st.sidebar:
@@ -293,10 +301,14 @@ def main():
             "How to determine Iqama expiry?",
         ]
 
+        # Render sample questions as links so we can wrap Urdu ones with .urdu-text.
+        # Clicking a link appends ?sample_q=N to the URL; we read that below.
         for i, q in enumerate(sample_questions):
-            if st.button(q, key=f"sample_q_{i}"):
-                sample_clicked = q
-
+            is_urdu = is_urdu_text(q)
+            display = f"<span class='urdu-text'>{q}</span>" if is_urdu else q
+            href = f"?sample_q={i}"
+            st.markdown(f'<a href="{href}" style="text-decoration:none; color:inherit;">{display}</a>', unsafe_allow_html=True)
+ 
         st.markdown("---")
     
     # ----- HEADER -----
