@@ -149,7 +149,6 @@ def answer_question(
     all_chunks,
     all_chunks_metadata,
     k: int = 5,
-    lang_mode: str = "Auto (match question)",
 ):
     # 1) Retrieve
     retrieved = retrieve(query, model, index, all_chunks, all_chunks_metadata, k=k)
@@ -157,18 +156,8 @@ def answer_question(
     # 2) Build context
     context_text = build_context_for_prompt(retrieved, all_chunks)
 
-    # 3) Language instruction based on toggle
-    # If Auto: detect current query language and force the model to answer in that language
-    if lang_mode.startswith("English"):
-        lang_instruction = "Always answer in **English**, even if the question is in another language.\n"
-    elif lang_mode.startswith("Urdu"):
-        lang_instruction = "Always answer in **Urdu using Urdu script**, even if the question is in another language.\n"
-    else:
-        # Auto mode → detect the language of THIS query and force that language for this reply
-        if is_urdu_text(query):
-            lang_instruction = "Always answer in **Urdu using Urdu script** (the user asked in Urdu).\n"
-        else:
-            lang_instruction = "Always answer in **English** (the user asked in English).\n"
+    # 3) Language instruction based on detected language
+    lang_instruction = "Always answer in **Urdu using Urdu script** (the user asked in Urdu).\n" if is_urdu_text(query) else "Always answer in **English** (the user asked in English).\n"
 
     system_message = {
         "role": "system",
@@ -207,6 +196,7 @@ def answer_question(
     # 5) Call LLM
     reply = llm_chat(messages)
     return reply, retrieved
+
 
 def is_urdu_text(text):
     # Urdu unicode range: 0600–06FF
@@ -301,39 +291,6 @@ def main():
 
         st.markdown("---")
 
-        st.markdown("### ⚙️ Settings")
-
-        lang_mode = st.radio(
-            "Answer language",
-            ["Auto (match question)", "English", "Urdu"],
-            index=0,
-            help="Choose whether the bot answers in English, Urdu, or matches the question.",
-        )
-
-        # Optional: small feedback stats
-        if st.session_state.feedback:
-            total = len(st.session_state.feedback)
-            helpful = sum(
-                1 for f in st.session_state.feedback if f["label"] == "helpful"
-            )
-            st.markdown("---")
-            st.markdown("### 📊 Feedback summary")
-            st.write(f"Total responses: {total}")
-            st.write(f"Marked helpful: {helpful}")
-
-    # ----- HEADER -----
-    st.markdown(
-        '<div class="askksa-title">AskKSA Chatbot 🇸🇦</div>', unsafe_allow_html=True
-    )
-    st.markdown(
-        '<div class="askksa-subtitle">Ask about Iqama, visas, fines and other Saudi services (unofficial assistant).</div>',
-        unsafe_allow_html=True,
-    )
-    st.divider()
-
-    # update lang_mode in state
-    st.session_state.lang_mode = lang_mode
-
     # Load resources (index, chunks, model)
     with st.spinner("Loading index and knowledge base..."):
         embed_model, index, all_chunks, all_chunks_metadata = load_resources()
@@ -385,21 +342,10 @@ def main():
                     all_chunks,
                     all_chunks_metadata,
                     k=5,
-                    lang_mode=st.session_state.lang_mode,
                 )
 
-                # Decide if this reply should be treated as Urdu
-                lang_mode = st.session_state.lang_mode
-                if lang_mode.startswith("Urdu"):
-                    is_urdu = True
-                elif lang_mode.startswith("English"):
-                    is_urdu = False
-                else:
-                    # Auto mode → decide based on the user's input
-                    is_urdu = is_urdu_text(user_input)
-
                 # Render with correct styling
-                if is_urdu:
+                if user_is_urdu:
                     st.markdown(
                         f"<div class='urdu-text'>{answer}</div>",
                         unsafe_allow_html=True,
@@ -409,37 +355,11 @@ def main():
 
                 # Store the flag along with the content
                 st.session_state.chat_history.append(
-                    {"role": "assistant", "content": answer, "is_urdu": is_urdu}
+                    {"role": "assistant", "content": answer, "is_urdu": user_is_urdu}
                 )
 
-                # 🟩 store retrieved in session so it persists across reruns
+                # Store retrieved in session so it persists across reruns
                 st.session_state.last_retrieved = retrieved
-                st.session_state.last_question = user_input
-                st.session_state.last_answer = answer
-
-        # ----- Feedback buttons -----
-        col1, col2, _ = st.columns([1, 1, 4])
-        feedback_key_prefix = f"fb_{len(st.session_state.feedback)}"
-
-        with col1:
-            if st.button("👍 Helpful", key=feedback_key_prefix + "_yes"):
-                st.session_state.feedback.append(
-                    {"question": user_input, "answer": answer, "label": "helpful"}
-                )
-                st.success("Thanks for your feedback!")
-
-        with col2:
-            if st.button("👎 Not helpful", key=feedback_key_prefix + "_no"):
-                st.session_state.feedback.append(
-                    {
-                        "question": user_input,
-                        "answer": answer,
-                        "label": "not_helpful",
-                    }
-                )
-                st.info("Thanks, we’ll use this to improve.")
-
-    # 🔻 FROM HERE ON: ALWAYS RENDER (even when user_input is None) 🔻
 
     # ----- Sources expander (for last answer) -----
     if st.session_state.last_retrieved:
@@ -452,7 +372,7 @@ def main():
                 st.write("---")
 
     # =======================
-    # SESSION HISTORY (BELOW CHAT)
+    # SESSION HISTORY (UNDER USER INPUT)
     # =======================
     st.markdown("---")
     st.markdown("### 📝 Session History")
