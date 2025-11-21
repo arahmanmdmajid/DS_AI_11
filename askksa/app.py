@@ -278,10 +278,10 @@ def main():
 
         sample_questions = [
             "اقامہ کی تجدید کا طریقہ کار کیا ہے؟",
-            "How can I check my Iqama expiry in Absher?",
-            "How to transfer sponsorship (Naqal Kafala) online?",
-            "How to pay traffic fines through Absher?",
-            "How to check visit visa validity in Absher?",
+            "What are the services available on Absher?",
+            "اسپانسر شپ (نقل کفالہ) کو آن لائن کیسے منتقل کیا جائے؟",
+            "What are the requirements for premium residency?",
+            "How to determine Iqama expiry?",
         ]
 
         for i, q in enumerate(sample_questions):
