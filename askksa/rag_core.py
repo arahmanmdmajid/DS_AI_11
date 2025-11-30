@@ -101,7 +101,8 @@ def answer_question(
     context_text = build_context_for_prompt(retrieved, all_chunks)
 
     # 3) Language rule based on user query
-    lang_rule = LANG_RULE_URDU if is_urdu_text(query) else LANG_RULE_EN
+    is_query_urdu = is_urdu_text(query)
+    lang_rule = LANG_RULE_URDU if is_query_urdu else LANG_RULE_EN
 
     system_message = {
         "role": "system",
@@ -114,8 +115,14 @@ def answer_question(
     for turn in chat_history[-6:]:
         role = turn.get("role")
         content = turn.get("content")
-        if role in ("user", "assistant") and isinstance(content, str):
-            messages.append({"role": role, "content": content})
+        if role not in ("user", "assistant") or not isinstance(content, str):
+            continue
+
+        # keep only turns that match the query's language
+        if is_urdu_text(content) != is_query_urdu:
+            continue
+
+        messages.append({"role": role, "content": content})
 
     # 5) User message containing context + question
     user_message = {
