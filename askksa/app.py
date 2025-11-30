@@ -92,26 +92,20 @@ def main() -> None:
         # Sources for the last answer
         st.markdown("---")
         st.markdown("### 📚 Sources used (last answer)")
-        # Placeholder that we can update later in the script
-        sources_placeholder = st.empty()
-
-        # Initial render (for cases when page loads with an existing session)
         if st.session_state.last_retrieved:
-            with sources_placeholder:
-                for r in st.session_state.last_retrieved:
-                    title = r.get("article_title", "Unknown")
-                    url = r.get("url", "")
-                    score = r.get("score", None)
-                    st.markdown(f"**{r['rank']}. {title}**")
-                    if url:
-                        st.caption(f"[Source link]({url})")
-                    if score is not None:
-                        st.caption(f"Similarity score: `{score:.4f}`")
-                    st.text(r.get("text_preview", ""))
-                    st.markdown("<hr>", unsafe_allow_html=True)
+            for r in st.session_state.last_retrieved:
+                title = r.get("article_title", "Unknown")
+                url = r.get("url", "")
+                score = r.get("score", None)
+                st.markdown(f"**{r['rank']}. {title}**")
+                if url:
+                    st.caption(f"[Source link]({url})")
+                if score is not None:
+                    st.caption(f"Similarity score: `{score:.4f}`")
+                st.text(r.get("text_preview", ""))
+                st.markdown("<hr>", unsafe_allow_html=True)
         else:
-            with sources_placeholder:
-                st.caption("Sources will appear here after you ask a question.")
+            st.caption("Sources will appear here after you ask a question.")
 
     # ---------- MAIN AREA HEADER ----------
     st.title("🇸🇦 AskKSA – Smart Helper for Absher, Iqama & Visas")
@@ -179,25 +173,6 @@ def main() -> None:
             {"role": "assistant", "content": answer, "is_urdu": user_is_urdu}
         )
         st.session_state.last_retrieved = retrieved
-
-        # Update sidebar sources immediately for this run
-        if st.session_state.last_retrieved:
-            with sources_placeholder:
-                for r in st.session_state.last_retrieved:
-                    title = r.get("article_title", "Unknown")
-                    url = r.get("url", "")
-                    score = r.get("score", None)
-                    st.markdown(f"**{r['rank']}. {title}**")
-                    if url:
-                        st.caption(f"[Source link]({url})")
-                    if score is not None:
-                        st.caption(f"Similarity score: `{score:.4f}`")
-                    st.text(r.get("text_preview", ""))
-                    st.markdown("<hr>", unsafe_allow_html=True)
-        else:
-            with sources_placeholder:
-                st.caption("Sources will appear here after you ask a question.")
-        
 
         # ---------- FEEDBACK BUTTONS ----------
         col1, col2, _ = st.columns([1, 1, 4])
