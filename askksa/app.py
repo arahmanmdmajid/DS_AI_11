@@ -51,15 +51,15 @@ def main() -> None:
     # ---------- SESSION STATE INITIALIZATION ----------
     if "chat_history" not in st.session_state:
         # Each entry: { "role": "user"/"assistant", "content": str, "is_urdu": bool }
-        st.session_state.chat_history: List[Dict[str, object]] = []
+        st.session_state["chat_history"] = []
 
     if "feedback" not in st.session_state:
         # Each entry: { "question": str, "answer": str, "label": "helpful"/"not_helpful" }
-        st.session_state.feedback: List[Dict[str, str]] = []
+        st.session_state["feedback"] = []
 
     if "last_retrieved" not in st.session_state:
         # Will store the retrieval results from the most recent answer
-        st.session_state.last_retrieved: Optional[List[Dict[str, object]]] = None
+        st.session_state["last_retrieved"] = None
 
     # This will store which sample question (if any) was clicked this run
     sample_clicked: Optional[str] = None
