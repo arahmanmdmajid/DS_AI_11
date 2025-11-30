@@ -5,7 +5,9 @@ import streamlit as st
 
 from data_loader import load_resources
 from rag_core import answer_question, is_urdu_text
-from config import BASE_DIR, SHOW_SIMILARITY, PREVIEW_CHARS, HISTORY_WINDOW
+
+# We still keep BASE_DIR here only for UI assets (e.g., bot avatar image).
+BASE_DIR = Path(__file__).resolve().parent
 
 
 def render_urdu(text: str) -> None:
@@ -13,46 +15,18 @@ def render_urdu(text: str) -> None:
     st.markdown(f"<div class='urdu-text'>{text}</div>", unsafe_allow_html=True)
 
 
-def render_sources_in_sidebar(placeholder, retrieved: Optional[List[Dict]]) -> None:
-    """
-    Render the 'Sources used (last answer)' section inside the given placeholder.
-    This allows us to update it *after* we compute a new answer, in the same run.
-    """
-    with placeholder:
-        if not retrieved:
-            st.caption("Sources will appear here after you ask a question.")
-            return
-
-        for r in retrieved:
-            title = r.get("article_title", "Unknown")
-            url = r.get("url", "")
-            score = r.get("score", None)
-            preview = r.get("text_preview", "")
-
-            # Extra safety: enforce PREVIEW_CHARS limit if preview is long
-            if preview and len(preview) > PREVIEW_CHARS:
-                preview = preview[:PREVIEW_CHARS] + "..."
-
-            st.markdown(f"**{r.get('rank', '?')}. {title}**")
-            if url:
-                st.caption(f"[Source link]({url})")
-            if SHOW_SIMILARITY and score is not None:
-                st.caption(f"Similarity score: `{score:.4f}`")
-            if preview:
-                st.text(preview)
-
-            st.markdown("<hr>", unsafe_allow_html=True)
-
-
 def main() -> None:
     # ---------- PAGE CONFIG & GLOBAL STYLING ----------
     st.set_page_config(page_title="AskKSA Chatbot", page_icon="🇸🇦")
 
+    # Urdu font + styling
     st.markdown(
         """
     <style>
+    /* Load Google Urdu font */
     @import url('https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@400;600&display=swap');
 
+    /* Urdu styling: right-aligned + Nastaliq font */
     .urdu-text {
         font-family: 'Noto Nastaliq Urdu', serif;
         font-size: 1.2rem;
@@ -60,6 +34,7 @@ def main() -> None:
         text-align: right;
     }
 
+    /* Chat message tweaks */
     .stChatMessage {
         padding: 0.2rem 0.4rem;
     }
@@ -69,6 +44,8 @@ def main() -> None:
     )
 
     # ---------- LOAD RAG RESOURCES ----------
+    # All heavy lifting (embedding model, FAISS index, chunks, metadata)
+    # is now handled in data_loader.load_resources().
     embed_model, index, all_chunks, all_chunks_metadata = load_resources()
 
     # ---------- SESSION STATE INITIALIZATION ----------
@@ -77,23 +54,26 @@ def main() -> None:
         st.session_state.chat_history: List[Dict[str, object]] = []
 
     if "feedback" not in st.session_state:
+        # Each entry: { "question": str, "answer": str, "label": "helpful"/"not_helpful" }
         st.session_state.feedback: List[Dict[str, str]] = []
 
     if "last_retrieved" not in st.session_state:
+        # Will store the retrieval results from the most recent answer
         st.session_state.last_retrieved: Optional[List[Dict[str, object]]] = None
 
-    # Will store which sample question (if any) was clicked this run
+    # This will store which sample question (if any) was clicked this run
     sample_clicked: Optional[str] = None
 
     # ---------- SIDEBAR ----------
     with st.sidebar:
         with st.expander("ℹ️ About AskKSA", expanded=False):
             st.markdown(
-                "- Answers are based on a curated Absher / Saudi services dataset.\n"
+                "- Answers are based on your curated Absher / Saudi services articles.\n"
                 "- This is **not** an official government service.\n"
-                "- Always double-check critical steps on official portals."
+                "- Always double-check important steps on official portals."
             )
 
+        # Sample questions
         st.markdown("---")
         st.markdown("### 💡 Sample Questions")
 
@@ -109,21 +89,36 @@ def main() -> None:
             if st.button(q, key=f"sample_q_{i}"):
                 sample_clicked = q
 
+        # Sources for the last answer
         st.markdown("---")
         st.markdown("### 📚 Sources used (last answer)")
-
-        # Placeholder so we can update sources later in the same run
+        # Placeholder that we can update later in the script
         sources_placeholder = st.empty()
 
-    # Initial render of sources for this run (may be overwritten later if user asks a question)
-    render_sources_in_sidebar(sources_placeholder, st.session_state.last_retrieved)
+        # Initial render (for cases when page loads with an existing session)
+        if st.session_state.last_retrieved:
+            with sources_placeholder:
+                for r in st.session_state.last_retrieved:
+                    title = r.get("article_title", "Unknown")
+                    url = r.get("url", "")
+                    score = r.get("score", None)
+                    st.markdown(f"**{r['rank']}. {title}**")
+                    if url:
+                        st.caption(f"[Source link]({url})")
+                    if score is not None:
+                        st.caption(f"Similarity score: `{score:.4f}`")
+                    st.text(r.get("text_preview", ""))
+                    st.markdown("<hr>", unsafe_allow_html=True)
+        else:
+            with sources_placeholder:
+                st.caption("Sources will appear here after you ask a question.")
 
     # ---------- MAIN AREA HEADER ----------
     st.title("🇸🇦 AskKSA – Smart Helper for Absher, Iqama & Visas")
 
     st.write(
         "Ask questions about Saudi Arabia visas, Iqama, visit visas, fines, and government "
-        "services. The assistant uses a curated Absher / Saudi documentation dataset for answers."
+        "services. The assistant uses your curated Absher / Saudi documentation for answers."
     )
 
     st.info(
@@ -133,7 +128,7 @@ def main() -> None:
 
     # ---------- RENDER CHAT HISTORY ----------
     for turn in st.session_state.chat_history:
-        avatar = "🧑" if turn["role"] == "user" else str(BASE_DIR / "bot.png")
+        avatar = "🧑" if turn["role"] == "user" else str(BASE_DIR / "askksa_bot1.png")
         with st.chat_message(turn["role"], avatar=avatar):
             content = str(turn["content"])
             if turn.get("is_urdu", False):
@@ -147,9 +142,10 @@ def main() -> None:
     user_input = typed_input or sample_clicked
 
     if user_input:
+        # Detect language and store with the message
         user_is_urdu = is_urdu_text(user_input)
 
-        # Show the new user message
+        # Show the new user message immediately in the chat
         with st.chat_message("user", avatar="🧑"):
             if user_is_urdu:
                 render_urdu(user_input)
@@ -160,16 +156,17 @@ def main() -> None:
             {"role": "user", "content": user_input, "is_urdu": user_is_urdu}
         )
 
-        # Generate assistant answer
-        with st.chat_message("assistant", avatar=str(BASE_DIR / "bot.png")):
+        # Generate and display the assistant's answer
+        with st.chat_message("assistant", avatar=str(BASE_DIR / "askksa_bot1.png")):
             with st.spinner("Thinking..."):
                 answer, retrieved = answer_question(
                     user_input,
-                    st.session_state.chat_history[-HISTORY_WINDOW:],  # pass recent history
+                    st.session_state.chat_history,
                     embed_model,
                     index,
                     all_chunks,
                     all_chunks_metadata,
+                    k=5,
                 )
 
                 if user_is_urdu:
@@ -177,14 +174,30 @@ def main() -> None:
                 else:
                     st.markdown(answer)
 
-        # Save assistant message + retrieval metadata
+        # Save assistant message + retrieval metadata to session
         st.session_state.chat_history.append(
             {"role": "assistant", "content": answer, "is_urdu": user_is_urdu}
         )
         st.session_state.last_retrieved = retrieved
 
-        # 🔥 Immediately update sources in sidebar for this same run
-        render_sources_in_sidebar(sources_placeholder, st.session_state.last_retrieved)
+        # Update sidebar sources immediately for this run
+        if st.session_state.last_retrieved:
+            with sources_placeholder:
+                for r in st.session_state.last_retrieved:
+                    title = r.get("article_title", "Unknown")
+                    url = r.get("url", "")
+                    score = r.get("score", None)
+                    st.markdown(f"**{r['rank']}. {title}**")
+                    if url:
+                        st.caption(f"[Source link]({url})")
+                    if score is not None:
+                        st.caption(f"Similarity score: `{score:.4f}`")
+                    st.text(r.get("text_preview", ""))
+                    st.markdown("<hr>", unsafe_allow_html=True)
+        else:
+            with sources_placeholder:
+                st.caption("Sources will appear here after you ask a question.")
+        
 
         # ---------- FEEDBACK BUTTONS ----------
         col1, col2, _ = st.columns([1, 1, 4])
@@ -204,12 +217,13 @@ def main() -> None:
                 )
                 st.info("Thanks, we’ll use this to improve.")
 
-    # ---------- CHAT HISTORY / SUMMARY ----------
+    # ---------- CHAT HISTORY / FEEDBACK PANEL ----------
     st.markdown("---")
     st.subheader("🕒 Conversation History (summary)")
 
     if st.session_state.chat_history:
         with st.expander("Show condensed Q&A history", expanded=False):
+            # We'll show only user+assistant pairs
             pair_idx = 1
             i = 0
             while i < len(st.session_state.chat_history) - 1:
